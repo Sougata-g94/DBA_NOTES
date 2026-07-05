@@ -1,0 +1,5 @@
+mock interview questions - 03.07.2025
+========================================
+who manage ASM ?
+mirroing ? striping ?
+multiplexing ASM ?

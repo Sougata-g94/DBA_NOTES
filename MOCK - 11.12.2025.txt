@@ -1,0 +1,19 @@
+1. when we have PGA then why we need temp for sorting data ?
+2. Read consistency ?
+3. purpose of PGA, SGA components
+4. what is undo_recovery ?
+5. purpose SGA  ? (which kind of process in SGA cover) - in large pool
+6. diffrence between PGA & UGA ? uga is the part of pga. when server process dedicated to
+7. purpose of redolog file ? 
+8. when do we need instance recovery ?
+9. process of instance recovery OR how instance recovery happend ?
+10. what is undo read consistency ?
+11. which BG process helps to genarate AWR report to snapshots ? -- MMON
+12. what is CKPT ? Types Of CKPT ?
+13. Purpose of SYSTEM tablespace ?
+14. Where present in memory meta data ?
+15. What is Soft parsing and Hard parsing ?
+16. Do soft parsing need sysntax and symentic check ? why ?
+17. When lgwr process triggerd ?
+18. When SCN no generate in our database ? -- in every nano second genarate SCN no 
+19. check up and running in OS prompt v$database

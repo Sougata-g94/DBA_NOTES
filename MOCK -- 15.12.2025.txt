@@ -1,0 +1,22 @@
+1. can we assign roll 1 to roll 2 ? -- YES, need to practice
+2. 01555  snapshot error - ✅
+3. system and object privilage defination. ✅
+4. purpose of role ? ✅
+5. grant option and admin option with senario ? -- with grant option revoke the 3rd person no longer have access. ✅
+6. undo retaintion policy ✅
+7. how to check invalid object view ? --- user_objects ✅
+8. how to validate the invalid object ? --- @?/rdbms/admin/utlrp.sql ✅
+9. when SGA got created? -- when startup the database. ✅
+10. UGA and PGA diffrence ? ✅
+11. if server is shared and dedicated then what happned ? -- if dedicated inside PGA
+ANS	==> In dedicated server mode, each user has a private server process with UGA stored in PGA, while in shared server mode, multiple users share server processes and their UGA is stored in the SGA, typically in the large pool.
+---------------------------------------------------------
+---------------------------------------------------------
+12. types of backup ? 
+13. diffrence physical bckup and logical bckup? -- phy bck -- it takes whole database structure but in logical we can take inside data of tables.
+14. hot and cold backup diffrence ?
+15. Purpose Remap schema parameter in logical bckup ?
+16. if i run expdp full backup i want it happend faster way, in that case which parameter shold i use ?
+17. i've already ran expdp backup running,  now need to found it and kill it ? how to do it ?
+18. How to check invalid object ? what is the view ?
+19. How to validate invalid objects ?

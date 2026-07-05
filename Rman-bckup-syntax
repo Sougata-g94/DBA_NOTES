@@ -1,0 +1,93 @@
+[oracle@localhost ~]$ . oraenv
+ORACLE_SID = [oracle] ? prod
+The Oracle base has been set to /u01/app/oracle
+[oracle@localhost ~]$ 
+[oracle@localhost ~]$ ps -ef | grep pmon
+oracle    5439     1  0 19:46 ?        00:00:01 ora_pmon_prod
+oracle   24396 24268  0 21:35 pts/1    00:00:00 grep --color=auto pmon
+[oracle@localhost ~]$ 
+[oracle@localhost ~]$ rman target /
+
+Recovery Manager: Release 19.0.0.0.0 - Production on Sun Dec 29 21:35:59 2024
+Version 19.15.0.0.0
+
+Copyright (c) 1982, 2019, Oracle and/or its affiliates.  All rights reserved.
+
+connected to target database: PROD (DBID=589086288)
+
+RMAN> backup database plus archivelog;
+
+
+Starting backup at 29-DEC-24
+current log archived
+using target database control file instead of recovery catalog
+allocated channel: ORA_DISK_1
+channel ORA_DISK_1: SID=78 device type=DISK
+channel ORA_DISK_1: starting archived log backup set
+channel ORA_DISK_1: specifying archived log(s) in backup set
+input archived log thread=1 sequence=10 RECID=20 STAMP=1177257526
+input archived log thread=1 sequence=11 RECID=2 STAMP=1177330600
+input archived log thread=1 sequence=12 RECID=3 STAMP=1177341830
+input archived log thread=1 sequence=13 RECID=4 STAMP=1177438056
+input archived log thread=1 sequence=14 RECID=5 STAMP=1177887153
+input archived log thread=1 sequence=15 RECID=6 STAMP=1177979447
+input archived log thread=1 sequence=16 RECID=7 STAMP=1178220187
+input archived log thread=1 sequence=17 RECID=8 STAMP=1178234982
+input archived log thread=1 sequence=18 RECID=9 STAMP=1178282861
+input archived log thread=1 sequence=19 RECID=10 STAMP=1178489024
+input archived log thread=1 sequence=20 RECID=11 STAMP=1179069440
+input archived log thread=1 sequence=21 RECID=12 STAMP=1179169572
+input archived log thread=1 sequence=22 RECID=13 STAMP=1179762326
+input archived log thread=1 sequence=23 RECID=14 STAMP=1181430511
+input archived log thread=1 sequence=30 RECID=21 STAMP=1185712576
+input archived log thread=1 sequence=31 RECID=22 STAMP=1185712577
+input archived log thread=1 sequence=32 RECID=23 STAMP=1185712626
+input archived log thread=1 sequence=33 RECID=24 STAMP=1185712628
+input archived log thread=1 sequence=34 RECID=25 STAMP=1185712632
+input archived log thread=1 sequence=35 RECID=26 STAMP=1185746310
+input archived log thread=1 sequence=36 RECID=27 STAMP=1185804120
+input archived log thread=1 sequence=37 RECID=28 STAMP=1186574474
+input archived log thread=1 sequence=38 RECID=29 STAMP=1188329826
+input archived log thread=1 sequence=39 RECID=30 STAMP=1189021607
+input archived log thread=1 sequence=40 RECID=31 STAMP=1189028203
+channel ORA_DISK_1: starting piece 1 at 29-DEC-24
+channel ORA_DISK_1: finished piece 1 at 29-DEC-24
+piece handle=/u01/app/oracle/fast_recovery_area/PROD/backupset/2024_12_29/o1_mf_annnn_TAG20241229T213648_mq2wwssq_.bkp tag=TAG20241229T213648 comment=NONE
+channel ORA_DISK_1: backup set complete, elapsed time: 00:03:07
+Finished backup at 29-DEC-24
+
+Starting backup at 29-DEC-24
+using channel ORA_DISK_1
+channel ORA_DISK_1: starting full datafile backup set
+channel ORA_DISK_1: specifying datafile(s) in backup set
+input datafile file number=00001 name=/u01/app/oracle/oradata/PROD/system01.dbf
+input datafile file number=00003 name=/u01/app/oracle/oradata/PROD/sysaux01.dbf
+input datafile file number=00004 name=/u01/app/oracle/oradata/PROD/undotbs01.dbf
+input datafile file number=00002 name=/u01/app/oracle/oradata/PROD/scgtbs.dbf
+input datafile file number=00005 name=/u01/app/oracle/oradata/PROD/niktbs.dbf
+input datafile file number=00007 name=/u01/app/oracle/oradata/PROD/users01.dbf
+channel ORA_DISK_1: starting piece 1 at 29-DEC-24
+channel ORA_DISK_1: finished piece 1 at 29-DEC-24
+piece handle=/u01/app/oracle/fast_recovery_area/PROD/backupset/2024_12_29/o1_mf_nnndf_TAG20241229T213957_mq2x2qhm_.bkp tag=TAG20241229T213957 comment=NONE
+channel ORA_DISK_1: backup set complete, elapsed time: 00:02:56
+Finished backup at 29-DEC-24
+
+Starting backup at 29-DEC-24
+current log archived
+using channel ORA_DISK_1
+channel ORA_DISK_1: starting archived log backup set
+channel ORA_DISK_1: specifying archived log(s) in backup set
+input archived log thread=1 sequence=41 RECID=32 STAMP=1189028575
+channel ORA_DISK_1: starting piece 1 at 29-DEC-24
+channel ORA_DISK_1: finished piece 1 at 29-DEC-24
+piece handle=/u01/app/oracle/fast_recovery_area/PROD/backupset/2024_12_29/o1_mf_annnn_TAG20241229T214255_mq2x88p3_.bkp tag=TAG20241229T214255 comment=NONE
+channel ORA_DISK_1: backup set complete, elapsed time: 00:00:01
+Finished backup at 29-DEC-24
+
+Starting Control File and SPFILE Autobackup at 29-DEC-24
+piece handle=/u01/app/oracle/fast_recovery_area/PROD/autobackup/2024_12_29/o1_mf_s_1189028580_mq2x8f19_.bkp comment=NONE
+Finished Control File and SPFILE Autobackup at 29-DEC-24
+
+RMAN> 
+
+RMAN> 

@@ -1,0 +1,50 @@
+21. Steps of creation manual database ?
+=>
+
+22. What is CrossCheck backup ?
+=> 
+
+23. What is Repositary (RMAN) ?
+=> 
+
+24. How many types of Redundancy policies do we have ?
+=> 
+
+25. What is Recovery Windows Redundancy policy ?
+=> 
+
+26. database refresh explanation ?
+=> 
+
+27. EXP and EXPDP diffrence ?
+=> 
+
+28. Diffrence between physical standby and Logical standby ? (DG)
+=> 
+
+29. What is sql profile ?
+=> 
+
+30. What is default index do you have ?
+=> 
+
+31. How to cancel MRP process ?
+=> 
+
+32. How to resolved archive log gap in DG ?
+=> 
+
+33. how to check dynamic and static parameter ?
+=> view name is -> v$parameter 
+
+34. Diffrence between 12c and 19c ?
+=>  i. 
+
+35. What is incarnation ?
+=> 
+
+36. How to chaeck Logical database size ?
+=>
+
+37. Inside of Oracle_home and Oracle_base ?
+=>

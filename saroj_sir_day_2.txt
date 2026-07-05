@@ -1,0 +1,12 @@
+1. what is rollback and roll forward ?
+2. what is smon and pmon ?
+3. when dbwr and lgwr happend ?
+4. architecture flow
+5. types of shutdown (4 types) 
+normal shutdown - (new connection not allow, wait new connection, )
+shut immediate - (no wait for any session, no wait for transaction
+shut abort - (data loss, new connection no allow)
+trabnsactional - (wait only transaction)
+
+6. How many types of flashback ?
+7.  

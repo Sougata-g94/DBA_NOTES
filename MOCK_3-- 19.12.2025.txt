@@ -1,0 +1,14 @@
+1. when SGA got created ? ✅
+
+2. which condition UGA not creted inside PGA ? ✅
+
+3. when 01555 errror occured ? 
+	- when undo retaintion policy get expired and user still wants to old value ? ✅
+
+4. instance recovery ? ✅
+
+5. when tablespace full how to come know do we add datafile or resize datafile ? ✅
+	-	 first, check tablespace utilisation. after that inside that tablespace check which datafile is threshold full. max size of datafile 32gb so if datafile 80% full then add a datafile if there can space (like 20gb used and left 12gb more) that senario we can resize the datafile.
+
+6. quota ? 
+	- quota is a storage to a perticular user of a tablespace.

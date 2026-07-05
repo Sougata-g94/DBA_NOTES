@@ -1,0 +1,10 @@
+1. Select / Update query flow 
+2. Redolog file purpose ?
+3. when all statments write redolog buffer to redolog file ?
+4. if server parameter file delete (spfile) how to restore ?
+5. Restore spfile from backup ?
+6. purpose of alertlog file ?
+7. if control file missing how to restore from my backup ?
+8. If user datafile missing, how to restore it ?
+9. how to check object provilege and system privilege to a user ?
+10. what is cache hit and cache miss ?

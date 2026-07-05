@@ -1,0 +1,211 @@
+/***************** Interview Questions Discussed By - ft.ANISH SIR ******************/
+
+1. Command of resize of tablespace ? 
+=> 👉 Alter database datafile 'file_location' resize tablespace
+--------------------------------------------------------------------------------------
+
+2. Type of privilages ?
+=> 👉 i. System privilages  ii. Object privilages
+--------------------------------------------------------------------------------------
+
+3. How many databases have in your server ?
+=> 👉 cat/etc/oratab 
+--------------------------------------------------------------------------------------
+3. Suppose someone asking to create a read user, how to create ?
+=> 👉 we'll create a user called (X) first -> Grant create session to this user (X) -> Grant select on HR.emp to user_name (X)
+--------------------------------------------------------------------------------------
+
+4. Check Long Running Sessions ?
+=> 👉 V$SESSION_LONGOPS;
+--------------------------------------------------------------------------------------
+
+5. Why password file is required ? 
+ 
+👉 First of all, password file is used for remote login to a database server. If you're login to a database remotely then the password file is required.
+
+👉 The naming convension of password file is ORAPW and SID.
+
+👉 The location of the password file will be '$ORACLE_HOME/dbs'.
+
+👉 It's storing the password of SYS user.
+
+--------------------------------------------------------------------------------------
+
+*6. How to change password of SYS user ?
+
+=> Whenever we change the SYS password then we can't login remotly anymore, we have to update the password file also.
+so, we'll use the same command to change password 'alter user user_name identified by password' but parallally we need to change the password file as well. 
+
+command of changing password is 'orapwd file=$ORACLE_HOME/dbs/orapwORCL password=new_secure_password entries=5 force=y
+--------------------------------------------------------------------------------------
+
+7. What is the purpose of sqlnet.ora file ? ($ORACLE_HOME/network/admin/sqlnet.ora)
+
+=> 👉 tells Oracle how to handle database connections between client and server.
+   Defines network behavior for Oracle Net.
+   Controls security, authentication, encryption, and tracing.
+
+--------------------------------------------------------------------------------------
+
+8. Diffrence between 'full backup' and '0 level backup' ?
+
+	👉 Full backup -> 
+
+                  Fullbackup is a database backup where you can take full physical files backup including datafile, control file, spfile and everything. It's a compleate backup of a database. 
+
+	👉 Zero level backup -> 
+
+                  i) It's a type of incremental backup.
+
+						ii) It'll create a mark and it is similer to full backup but it'll take the incremental backup. The blocks which has been modified that will be taken by the zero level backup.
+
+						iii) Also, zero level will check the last zero level backup and start from there.
+--------------------------------------------------------------------------------------
+
+9. Diffrence between 'Full backup' and 'incrimental backup' ?
+
+=> 👉 Full backup is a full database backup where you can take all the physical files 
+       backup using RMAN.
+
+    
+   👉 Incremental backup is just type of backup where you're taking the backup in a 
+      incremental way. The blocks which has been modified recently will be taken as a backup.
+
+      It's related 2 ways - i) o level backup ii) 1 level backup 
+--------------------------------------------------------------------------------------
+
+10. 'Cummalative backup' defination ?
+
+=> 👉 After the level 0 backup, all incremental backups will be stored together in one file.
+       that's call 'Cummalative backup'.
+--------------------------------------------------------------------------------------
+
+10. '0 level backup' and 'Full backup' diffrence ?
+
+=> Level 0 is making a mark or tag for the incrimental levels. Withput taking 0 level backup we can't take 1 level backup.
+   if we take 1 level backup without taking 0 level backup then it will be treated of 0 leval backup. 
+--------------------------------------------------------------------------------------
+
+10. 0 level and 1 level backup diffrence ?
+
+=> i). 0 level is a incremental backup and 1 level is also incremental backup.
+   ii). 0 level creates a mark and the blocks which has been modified recently will be taken as a backup.
+   iii). 0 level will check the last zero level backup and start backup from that point.
+   iv). 1 level backup is segregated into Diffrentiate and Cummalative backup.
+   v). Diffrentiate will check last 1 level backup and Cummalative will check last 0 level backup.
+--------------------------------------------------------------------------------------
+
+11. What is crosscheck backup ?
+
+👉  it will check the control file that backup is consistant or not, backup is available or not on physical location. To make control file aware that acctual backup is present or not we have to use this command 'Crosscheck backup'.
+
+This 'Crosscheck backup' will validate that the backup is present in a physical location and what backups are showing in 'list backup' command. It match the both command output and update to control file.
+--------------------------------------------------------------------------------------
+
+12. Diffrence Expired backup, Available and obsolute backup ?
+
+👉 Expired backup -> It is not present in the physical location and it's showing in a logical way.
+
+👉 Available backup -> it is present in the physical location as well as it's showing in a control file in a logical way. 
+
+👉 Obsolute backup -> it is physically present but the redundency has got expired.
+--------------------------------------------------------------------------------------
+
+13. How check Obsolute backup ?
+👉 Report Obsolute;
+--------------------------------------------------------------------------------------
+
+13. How check expired backup ?
+👉 RMAN> crosscheck backup;
+
+# Specific check:
+👉 RMAN> CROSSCHECK BACKUPSET;
+👉 RMAN> CROSSCHECK ARCHIVELOG ALL;
+👉 RMAN> CROSSCHECK BACKUP OF DATABASE;
+--------------------------------------------------------------------------------------
+
+13. How expired backup delete ?
+👉 RMAN> delete expired backup;   
+--------------------------------------------------------------------------------------
+
+14. How to check Expired backups list ?
+
+# Expired backups list:
+👉 RMAN> LIST EXPIRED BACKUP;
+
+# Expired archive logs:
+👉 RMAN> LIST EXPIRED ARCHIVELOG ALL;
+
+--------------------------------------------------------------------------------------
+
+14. Delete archive log ?
+👉 delete archivelog until time 'SYSDATE-1';
+--------------------------------------------------------------------------------------
+
+15. High level steps of catalog database ?
+
+👉 All the RMAN information stores in catelog DB. Multiple database's repositary strores in the catelog DB.
+suppose, 'PROD' database's control file has got delete then we'll use this catelog DB.
+--------------------------------------------------------------------------------------
+
+16. What privilage will you grant during catelog database ?
+
+👉 'Create catelog' privilage we'll grant to a user.
+--------------------------------------------------------------------------------------
+
+17. How to increase efficiency of incremental backup and data pump job ?
+
+=> BCT parameter (Block change tracking)
+👉 V$BLOCK_CHANGE_TRACKING - if it's enable then incremental backup will be faster way.
+
+👉 SYNTAX :  SELECT STATUS, FILENAME, BYTES, BLOCK_SIZE FROM V$BLOCK_CHANGE_TRACKING;
+--------------------------------------------------------------------------------------
+
+18. What is view ?
+=> 👉 'View' is a database object, mainly we use keeping complex queries in it.
+--------------------------------------------------------------------------------------
+
+19. Why we use materialized view ?
+=> 
+--------------------------------------------------------------------------------------
+
+20. How many types of rman retaintion policy ?
+👉 2 types
+RMAN RETENTION POLICY
+         │
+         ├── 1. RECOVERY WINDOW
+         ├── 2. REDUNDANCY
+         └── 3. NONE
+
+👉  RECOVERY WINDOW -- How many days oracle keep old backups. (default 7 - 30 days)
+👉  SYNTAX -- CONFIGURE RETENTION POLICY TO RECOVERY WINDOW OF 7 DAYS;
+
+👉 REDUNDANCY -- How many backup copies oracle keep. (standers - 2 copies)
+👉 SYNTAX -- CONFIGURE RETENTION POLICY TO REDUNDANCY 2;
+
+🛠️ Commands:
+
+👉 # Recovery Window set karo:
+RMAN> CONFIGURE RETENTION POLICY
+      TO RECOVERY WINDOW OF 7 DAYS;
+
+👉 # Redundancy set karo:
+RMAN> CONFIGURE RETENTION POLICY
+      TO REDUNDANCY 2;
+
+👉 # None set karo:
+RMAN> CONFIGURE RETENTION POLICY
+      TO NONE;
+
+👉 # Current policy check karo:
+RMAN> SHOW RETENTION POLICY;
+
+👉 # Obsolete backups dekhna:
+RMAN> REPORT OBSOLETE;
+
+👉 # Obsolete backups delete karo:
+RMAN> DELETE OBSOLETE;
+
+👉 # Noprompt se delete:
+RMAN> DELETE NOPROMPT OBSOLETE;
+--------------------------------------------------------------------------------------

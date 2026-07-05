@@ -1,0 +1,26 @@
+oracle Installation steps --
+----------------------------------
+
+After done VM mechine installed, before oracle install we need to install some prerequisite -- 
+
+1. yum list oracle*
+2. Now, as we're installe oracle 19c so select that line
+3. yum install shift + insert key --- 2 times enter (y) -- done prerequite installed
+4. changing the password (command : passwd oracle)
+5. retype -- oracle
+6. create a directory path to where i want to install my oracle application - mkdir -p /u01/app/oracle/product/19.0.0/dbhome_1
+7. change one file make selinux=permissive -- vi /etc/selinux/config
+8. cd /u01/app/oracle/product/19.0.0/dbhome_1  --- come to this dbhome_1 directory
+9. change permision -- chmod -R 755 /u01/
+10. change ownership -- chown -R oracle:oinstall /u01
+11. ls -l to check
+12. init 6 --  to restart server
+13. login as a oracle user
+14. cd /u01/app/oracle/product/19.0.0/dbhome_1/
+15. ./runinstaller  -- for install oracle application only
+16. cloose each step on popup
+17. there are two scripts will come, root.sh and oinstroot.sh both are run to the root user (new tab open as a root).
+18. Oracle application will completed
+19. cd bin -- to create database
+20. 
+ 

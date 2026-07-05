@@ -1,0 +1,15 @@
+MOCK - 29.03.2026
+------------------------------
+1. Why we use ASM ?
+2. Benifites of using ASM ?
+3. which software manage asm ? -- Grid infrastructure
+4. why we use ASM ? why not normal filesystem ?
+5. What is mirroring ?
+6. What is load balancing ?
+7. How does power limit parameter work ? 
+8. How to check an user is active or inactive status ?
+9. How to check the how long (time) a session is inactive ?
+10. How we can check the Last DDL command fired ?
+11. default profile hain then kyoun profile create kare ?
+12. Kya ek Role dusre Role ko de sakta hai?
+13. SELECT privilege wala role password ke saath diya ja sakta hai kya?

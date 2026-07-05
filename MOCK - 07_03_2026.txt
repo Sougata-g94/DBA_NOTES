@@ -1,0 +1,13 @@
+why we use patch
+type of patch
+types of backups
+hot backup and cold backup diffrence
+restore and recover diffrence
+if mera mount point full ho jaye toh kya karna hoga space increse karne k liye ?
+diffrential and cumeletive bckup diffrence
+types of fullbackup ?
+if controlfile missing but we have backup how to recover my bcakup ?
+system datafile missing but backup available how to restore backup ?
+complete recovery and incomplete recovery diffrence ?
+
+

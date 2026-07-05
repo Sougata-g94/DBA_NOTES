@@ -1,0 +1,1288 @@
+										Database Architecture Flow :
+									  =================================
+
+1. Reach to the Datafile location flow :-
+
+	✅ datafile is a physical location. Data blocks are created inside the datafile. Data
+		blocks are created when database is create. The data are stored in the data blocks which specify. 
+		(if 8kb is my datablock size then data will store to that data block, if it'll full then it create another 8kb data block)
+
+	✅ server process selecting the optimum plan it comes to datafile location, and it pick the 
+		data block and bring the block to 'database buffer cache' and make the changes or update. *example: (update sal 200 to 500)* -> the moment it update it becomes 'dirty block'. -> Next, it comes to 'Redolog buffer cache' where it writes the entire statments(DDL & DML)
+========================================================================================
+
+1. What is Oracle Database Architecture ?
+
+=> ✅ Oracle database has mainly divided into 2 parts which is INSTANCS and DATABASE(DISK).
+		Now, The INSTANCE has the SGA which contains some major compinents like SHARE POOL,
+		LARGE POOL, JAVA POOL, DB BUFFER CACHE and REDOLOG BUFFER CACHE. 
+		And, there are some major background process like DBWN,LGWR,SMON,PMON,CKPT and ARCn.
+		Now, The database lives in the disk and it has 4 main files DATAFILE, REDOLOG FILE, 
+		CONTROL FILE, ARCHIVE LOG FILE and some others like SPFILE, PASSWORD FILE. 
+		each user session also has a private PGA. Together it's called ORACLE SERVER.
+
+========================================================================================
+
+2. What OPTIMIZER does ?
+
+=> ✅ OPTIMIZER creates different possible execution plans for the query and choose the best execution plan for the query.
+
+========================================================================================
+
+3. Explain Rollback & Roll forword ?
+
+=> 👉 Rollback :  Rollback is a process that undoing changes which are not commited.
+						All the uncommited data is being UNDO through process of Rollback.
+						-- Oracle uses Undo data to restore the data to its previous state.
+
+
+=> 👉 Roll Forward : All commited data is being re-apply during DB recovery.
+						-- Oracle uses Redo logs to recover committed transactions after a crash.
+
+
+========================================================================================
+4. What is Oracle Database Architecture ?
+
+=> ✅ Oracle database mainly divided into 2 parts -  i>. Instance  ii>. datafile / disk
+	✅ Instance is divided into 2 parts - i>. SGA   ii>. Background Process
+
+	👉 ORACLE DATABASE
+	      │
+	      ├── 1️. INSTANCE (RAM mein)
+	      │         │
+	      │         ├── SGA
+	      │         └── Background Processes
+	      │
+	      └── 2️. DATABASE (Disk pe)
+	                └── Physical Files
+
+
+	👉 SGA — 5 Components
+
+			SGA (System Global Area)
+      │
+      ├── 1. Database Buffer Cache ------ Disk se jo bhi data read karte hain uska copy
+      																				(dirty OR Clean blocks).
+      ├── 2. Shared Pool -------------- Parsing hota hain.
+      ├── 3. Redo Log Buffer ------ DDL & DML statments
+      ├── 4. Large Pool ----------- Large oparation like, RMAN backup job.
+      └── 5. Java Pool ------------ java s/w operation
+
+
+	👉 Shared Pool -- 2 Components
+
+			SHARED POOL
+      │
+      ├── Library Cache ------------- SQL/PLSQL ka parsed form (Parsing ka kaam)
+      └── Data Dictionary Cache ----- Table, Column, User,Privilege (Metadata store)
+
+
+
+======================================================================================
+
+2. How a 'UPDATE' statment run in background ?
+
+=> ✅ 1. Client Side -
+	----------------------
+		You write -
+
+		UPDATE employees SET salary = salary + 500 WHERE id = 101;
+
+	✅ 2. Listener & Server Process Creation  -
+	---------------------------------------------
+		Listener receives the connection request and assigns a server process (Dedicated or Shared Server mode).
+
+		The server process handles all SQL execution for your session.
+
+	✅ 3. Parsing Phase (Library Cache in Shared Pool) -
+	---------------------------------------------------
+
+			When your query reaches the Oracle Instance:
+
+			Check Library Cache (Shared Pool in SGA):
+
+			If an identical query already exists → reuse execution plan.
+
+			If not → hard parse.
+
+			SQL Parser:
+
+			Checks SQL syntax and semantics (are tables/columns valid? do you have privileges?).
+
+			Optimizer (CBO):
+
+			Creates an execution plan (how to find the rows efficiently).
+
+			Row Source Tree:
+
+			A set of steps the engine will follow to perform the update.
+
+	✅ 4. Execution Phase -
+	----------------------
+
+			Server process starts executing the plan:
+
+			Reads required data blocks into Database Buffer Cache (from Datafiles if not already cached).
+
+			Applies Row-Level Exclusive Locks (TX locks) on the rows to be updated (so no one else can modify them until commit).
+
+	✅ 5. Modification in Memory -
+	----------------------
+
+			The new salary value is applied to the copy of the block in the Database Buffer Cache (SGA).
+
+			The undo tablespace is updated with the before image of the data (for rollback or read consistency).
+
+			Redo entries are generated in the Redo Log Buffer (SGA) — they describe the change, not the data itself.
+
+	✅ 6. Commit Phase -
+	----------------------
+
+			When you execute: 'COMMIT;'
+
+			LGWR immediately writes all redo from Redo Log Buffer to disk.
+
+			Locks are released.
+
+			Change becomes permanent and visible to others.
+
+	🔍🔍 Key Points for UPDATE in Oracle Architecture -
+	----------------------------------------------------
+
+			Parsing & Optimization happen in Shared Pool.
+
+			Actual data change happens in memory first (Buffer Cache).
+
+			Redo logs guarantee recoverability.
+
+			Undo data ensures rollback and read consistency.
+
+			DBWR doesn’t write immediately — it’s lazy; LGWR writes immediately on commit.
+
+=============================================================================================
+
+2. Size of Data blocks :-
+
+=> ✅ 2kb,4kb,8kb and 32kb. Industry standerd it will be 8kb.
+
+=============================================================================================
+**
+3. What is inside/store into the Redolog buffer cache ?
+
+=> ✅ whatever DDL amd DML statments we write it stored into 'Redolog buffer cache'. 
+		The statments are store into the 'redolog buffer cache', those statments are written into the 'Redo log file' also By the background process 'LGWR'.
+=============================================================================================
+4. What is inside into the 'Database buffer cache' ?
+
+=> ✅ The Database Buffer Cache is a crucial component of Oracle's System Global Area (SGA). It is used to store copies of data blocks that have been read from the data files. (components - dirty block, clean block).
+
+=============================================================================================
+5. When stored all the DDL & DML statments from 'Redolog buffer cache' to  'Redo log file' ?
+
+=> ✅ 'LGWR' process will execute when -
+	(i). Every 3 sec.   ( 'LGWR' will write all the statments from 'redolog buffer cache' to 'redolog file').
+	(ii). If, 1/3 area of full. ( 'LGWR' will write all the statments from 'redolog buffer cache' to 'redolog file').
+	(iii). When user hit commit.
+	(iv). 1MB size is full. (entire statment size is 1MB)
+
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ SCN concept / CKPT / DATAFILE :  ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+
+6. As we know all commited and non-commited statements are store from 'redolog buffer' to 'redolog file'. How system know which are the commited and non-commited statments ?
+
+=> ✅ The moment we start our database SCN no is genarate. When user use commit statment, that moment genarate a SCN number as a prefix for that perticuller statment. SCN number is add as a prefix of thoes statment. so, those statment has a SCN no these are commited statment and those hasn't SCN no these are non-commit statment.
+-----------------------------------------------------------
+
+7. What is Checkpoint (CKPT) ? (it also execute every 3 sec)
+
+=> ✅ CKPT makes sure that all changes in memory (SGA → buffer cache) are safely written to datafiles on disk.
+
+	✅ CKPT instruct DBwn to write dirty block into the datafiles (Committed + Uncommitted both). update control file with SCN number. And, update Datafile Headers.
+
+   ✅ CKPT (checkpoint) are 2 types.
+	 i). Incremental Checkpoint.  (ii). Full Checkpoint
+-----------------------------------------------------------
+
+# Incremental Checkpoint :-
+
+=> ✅ It searched for newly added SCN number, and it writes that new SCN number to 'control file' and update the new SCN number header of the 'datafile'.
+-------------------------------------------------------------
+
+# Full Checkpoint :-
+
+=> ✅ It execute, when we do full shutdown or log switch.
+		Full Checkpoint is also looks for newly added SCN number, and it writes that new SCN number to 'control file' and update the new SCN number header of the 'datafile'.
+
+		* Full Checkpoint instruct 'DBWN' / 'lazy writer' to write all the 'dirty blocks' into datafile.
+-------------------------------------------------------------
+
+7.1. When Does a Checkpoint Happen?
+=> Checkpoints can occur in several situations:
+
+	✅ Log Switch → when redo log file switches, checkpoint happens.
+
+	✅ Timeout → after a certain interval (LOG_CHECKPOINT_INTERVAL / FAST_START_MTTR_TARGET).
+
+	✅ Manual → DBA issues ALTER SYSTEM CHECKPOINT;.
+
+	✅ Database close → when shutting down cleanly, checkpoint ensures all data is written.
+
+-------------------------------------------------------------
+
+8. Data files types / what are their uses: 
+
+=> (i). System.dbf (ii). Sysaux.dbf (iii). Undo01.dbf (iv). Temp01.dbf (v). Users.dbf (these are the physical files, where actual data stores).
+
+** ✅ System.dbf :
+
+=> 'Data dictionary' basically stores into 'system.dbf' file. All others system related files are store to 'system.dbf' file.
+
+** ✅ Sysaux.dbf :
+
+=> In 'sysaux.dbf' file every hour snapshot of the database will stored. whenever user update a query the data is simontunasly similer tables it's showing old value. it's called read consistancy. 
+
+=> It stores data for AWR (Automatic Workload Repository) snapshots
+
+** ✅ Users.dbf :
+
+=> The users that we created by default those are store into 'User01.dbf' file. 
+example, the tables, posts,views that we created inside the users these are store into the 'Users01.dbf' file.
+
+** ✅ Undo01.dbf :
+
+=> When we run 'Rollback' commands, from where the data are coming that is 'Undo01.dbf' file.
+
+** ✅ Temp01.dbf :
+
+=> That is where Oracle does things like sorting operations required by ORDER BY, GROUP BY, and DISTINCT clauses and managing intermediate results for complex queries.
+=> Inside temp.dbf 'snapshot copy' has stores.
+
+
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ PASSWORD FILE :  ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+
+1. Two more physical files are here -
+=> 	✅ i> Password file  ii> Parameter files (pfile & spfile).
+
+	✅ # Password file --
+	=> the password of the only DBA users is store into the 'password' file.
+----------------------------------------------------------------------------
+
+2. Where is password file is located ?
+
+=> ✅ $ORACLE_BASE/dbs/orapw<SID>
+	✅ $ORACLE_BASE/dbs/orapw<SID>
+-----------------------------------------------------------------------------
+
+9. why password file keep password only DBA users ?
+
+=> ✅ Only DBA users can login into database even database is shutdown. Others users can't do this. 
+-----------------------------------------------------------------------------
+
+10. How to get the location of the Oracle parameter file (PFILE / SPFILE) ?
+=> 👉 SHOW PARAMETER spfile;
+-----------------------------------------------------------------------------
+11. What is password verified function ?
+=> It checks whether a password is Strong enough,Secure,Following company policy.
+👉 A password may require -
+		1 uppercase
+		1 lowercase
+		1 number
+		1 special character
+
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ PARAMETER FILE (pfile & spfile) :  ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+
+10. What is inside of Parameter files (pfile and spfile) ?
+
+=> 👉 inside pfile and spfile all the sizes of 'SGA' component and location of 'control file'.
+-----------------------------------------------------------------------------------------------
+
+11. spfile and pfile diffrence :
+
+=> 👉 'spfile' is binary file and 'pfile' is text file. We can't change 'spfile' manually, 
+		but we can change 'pfile' 'manually. 
+
+
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ CONTROL FILE & Redolog file :  ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+
+
+12. What is inside 'control file' ?
+
+=> i. Name of databases.(DB_SID) 
+	ii. database creation date & time.
+	iii. Tablespace Information
+	iv. Datafile Information  
+	v. Redo Log Information ( current log sequence number, archive log numbers).
+	vi. ckpt information  
+	vii. Archiving Information.  
+	viii. Backup repository.  
+	ix. Recovery Information
+	X. Log History  
+	xi. meta data of all the objects.
+
+-------------------------------------------------------------------------------------------
+
+13. What is inside Redolog file ?
+
+=> 👉  It keeps the DDL & DML statment of all the object of database.
+-----------------------------------------------------------------------------------------------
+
+14. What is diffrence between 'global database' name and 'sid' ?? **
+
+=> ✅  In one server we can have multiple database. but,
+       the SID name should be unique for each database.*
+--------------------------------------------------------------------------------------------
+
+15. Diffrent between '$oracle_home' and '$oracle_base' location ? **
+
+=>  ✅ $oracle_base -: Where all the binarys (datafile,control file,redolog file) of a 
+								database is stored. 
+
+	 ✅ $oracle_home- :: The installation of oracle version is done in 'oracle_home'
+	 							 location.
+
+-----------------------------------------------------------------------------------------------
+
+16. types of - 'STARTUP' ?
+
+=> i) Nomount ii) Mount  iii) Open 
+
+✅ # Nomount :  all 'SGA' size is define into 'spfile and pfile'. When we do 'startup nomount' default it reads 'spfile', if 'spfile' is not there then it will read 'pfile'.
+
+✅ In nomount state it will create just a blank structure and all the background process will start in nomount state. 
+
+✅ # Mount :  In 'mount' state it will read only 'control file' and it will stored all the meta data to the 'data dictionary'. 
+
+-----------------------------------------------------------------------------------------------
+
+17. If my pfile and spfile is deleted while running the database, how to create those file ?
+
+=> ✅ First, we check from which parameter file my database is running. (show parameter spfile)
+Second, create pfile/spfile from memory;
+-----------------------------------------------------------------------------------------------
+
+18. How many types of 'post_views_count' ?
+
+=> ✅ oracle has 2 types of post_views_count. (i). Static post_views_count  (ii). Dynamic post_views_count
+-----------------------------------------------------------------------------------------------
+
+19. Diffrence between 'dynamic post_views_count' and 'static post_views_count' ?
+
+=> 	✅ i). 'Dynamic post_views_count' data are fetch from 'data dictionary'.
+	   	 'Static post_views_count' data are fetch from 'data file'. 
+
+	✅ ii)  We can read 'dynamic post_views_count' also when database is in 'Mount' state.
+		 We can read 'static post_views_count' only when database is in 'Open' state.
+
+	✅ iii). 'Dynamic post_views_count' started with - "v$";  example: v$session;
+          	   'Static post_views_count' started with -  "dba_" example: dba_users;
+-----------------------------------------------------------------------------------------------
+
+20. How to know how many post_views_count are there ?
+
+=> 👉 select * from dict;
+-----------------------------------------------------------------------------------------------
+
+21. How to know data files name, location from 'static post_views_count'?
+=> 👉 select file_name from dba_data_files;
+-----------------------------------------------------------------------------------------------
+21. How to know data files name, location from 'dynamic post_views_count'?
+=> 👉 select name from v$datafile;
+-----------------------------------------------------------------------------------------------
+22. How to know how many users of our server ?
+=> 👉 select username from dba_users;
+-----------------------------------------------------------------------------------------------
+23. How to know my 'instance' name ?
+=> 👉 desc v$instance;
+=> 👉 select instance_name from v$instance;
+-----------------------------------------------------------------------------------------------
+24. What is the location of 'Redolog file' ?
+=> 👉 cd $ORACLE_BASE/oradata/<sid_name>
+---------------------------------------------------------------------------------------------
+
+26. what is SGA (System Global Area) ?
+
+=> ✅ SGA is 'shared memory' used by all users connected to the database.
+
+	👉 SGA keeps frequently used data in memory so Oracle becomes fast and efficient.
+		It stores - Buffer Cache, Shared Pool, large pool, stream pool, Redo Log Buffer.
+--------------------------------------------------------------------------
+
+27. what is PGA (Program Global Area) ?
+
+=> ✅ The PGA is a 'private workspace' in memory for each users connected to the Oracle 
+	database.
+
+	👉 It stores things like --
+			- Stores session’s temporary data.
+			- Stores sorting and filtering information.
+			- Variables needed to run your queries.
+--------------------------------------------------------------------------------------------
+
+26. what is cache hit and cache miss ? library hit ?
+
+=> ✅ Cache Hit :
+   ----------------
+👉 A cache hit occurs when the data requested by a query is found in the database cache. 
+
+** Database Buffer Cache: Stores copies of data blocks read from datafiles.
+
+** Shared Pool: Stores SQL execution plans, dictionary data, and other shared memory constructs.
+
+  ✅ Cache Miss :
+  -----------------
+👉 A cache miss occurs when the data requested by a query is not found in the db buffer
+	 cache, requiring it to be read from disk.
+
+
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ JAVA pool / Share pool / Large pool  :  ⚡⚡⚡⚡⚡⚡⚡⚡
+
+
+Shared Pool: 
+------------
+✅ It's a memory area in the Oracle database that holds shared SQL and PL/SQL code and data. This includes cached SQL statements, stored procedures, and other shared memory structures that improve performance by reducing the need for repetitive parsing and execution.
+
+Java Pool: 
+------------
+✅ This memory area is dedicated to caching Java objects and code used within the Oracle database. It helps improve performance for Java-based operations by reducing the overhead of loading and unloading Java classes.
+
+Large Pool: 
+-------------
+✅ It's an optional memory area used for large allocations and specific Oracle background processes that require larger memory buffers. It helps in managing memory outside of the shared pool and is particularly useful for parallel query operations, backup processes, and certain types of data transfers.
+
+
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ All Background Process  :  ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+
+## PMON (Process Monitor):
+------------------------------
+✅ PMON is responsible for -  process recovery when a user process fails/crash, It cleans up resources Free the spaces.
+
+✅ Simple Definition:
+
+👉 "Jab koi 'User Process' unexpectedly fail/crash ho jaaye — toh PMON us process ka cleanup karta hai automatically."
+
+👉 "PMON failed user processes ka cleanup karta hai — uncommitted transactions rollback karta hai, locks release karta hai, resources free karta hai, aur services listener mein register karta hai."
+
+👉 Service names ko - LISTENER mein register karta hai, Taaki naye clients database se connect kar sakein.
+
+User ka session crash hua
+(Network cut / App crash / Laptop band)
+          │
+          ▼
+PMON detect karta hai
+          │
+          ├── 1. Uncommitted transactions
+          │       → ROLLBACK karta hai
+          │
+          ├── 2. Locks jo us process ne
+          │   liye the
+          │       → RELEASE karta hai
+          │
+          ├── 3. SGA memory jo allocate
+          │   thi us process ke liye
+          │       → FREE karta hai
+          │
+          └── 4. Server Process
+                  → Terminate karta hai
+
+## SMON (System Monitor):
+------------------------------
+✅ SMON performs instance recovery at startup, team-up/linked-up free space in the database, and cleans up temporary segments that are no longer in use.
+
+✅ Simple Definition:
+
+👉"SMON System Monitor hai — iska main kaam Instance Recovery hai jisme do phases hote hain: 
+Roll Forward - jisme Redo Logs se committed data recover hota hai, aur 
+Roll Back - jisme UNDO se uncommitted transactions rollback hote hain. 
+Saath mein SMON Temp Segment cleanup aur Free Space Coalescing bhi karta hai."
+
+
+SMON
+  │
+  ├── 1. Instance Recovery
+  ├── 2. Temp Segment Cleanup
+  └── 3. Free Space Coalescing
+
+## DBWn (Database Writer):
+------------------------------
+✅ There are multiple DBWn processes (DBW0, DBW1, etc.). They are responsible for writing 
+	modified blocks from the database buffer cache to the data files on disk.
+
+## LGWR (Log Writer):
+------------------------------
+✅ LGWR writes redo entries from the redo log buffer to the redo log files. Redo logs are 
+	crucial for database recovery and transaction durability.
+
+## CKPT (Checkpoint):
+------------------------------
+✅ CKPT instruct DBwn to write dirty block into the datafiles (Committed + Uncommitted both). update control file with SCN number. And, update Datafile Headers.
+
+🟢 Full Checkpoint - Buffer Cache ke SARE dirty blocks ek saath Datafiles pe likho — ABHI!
+	 Kab hota hai - 
+		1. Database SHUTDOWN hone pe
+		2. ALTER SYSTEM CHECKPOINT; (Manual)
+		3. ALTER TABLESPACE BEGIN BACKUP;
+		4. Log Switch hone pe (older versions)
+
+🟢 Incremental Checkpoint - Continuously — thode thode dirty blocks likhte raho background 
+	 mein — smoothly!
+
+✅ Checkpoint Information :
+
+👉 Checkpoint SCN (System Change Number)
+👉 Datafile header update
+👉 Control file update
+👉 Recovery ke liye reference point
+
+During a checkpoint, Oracle ensures that all dirty buffers (modified blocks in the Database Buffer Cache) are written to the data files, and it records checkpoint information in the control file and data file headers.
+
+✅ Manual logswitch :: ALTER SYSTEM SWITCH LOGFILE;
+---------------------------------------------------------------------------
+
+1. What is Undo tablespace retaintion policy, check undo tablspace, ? 
+
+👉 UNDO_RETENTION is an initialization parameter that specifies the minimum amount of time (in seconds) Oracle tries to retain undo information after a transaction commits.
+
+👉 SHOW PARAMETER undo_retention;
+
+✅ Current Undo Tablespace :
+
+👉 SHOW PARAMETER undo_tablespace;
+
+---------------------------------------------------------------------------
+2. how we get to know is there any index on the table ?
+=> 
+---------------------------------------------------------------------------
+2. Index type ?
+
+=> 2 types  
+ 
+
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+⚡⚡⚡⚡⚡⚡⚡⚡ Installation & Basic Architecture Questions  : ⚡⚡⚡⚡⚡⚡
+
+1. what is RPM ?
+
+=> ✅ Context of Oracle installation on Linux, RPM stands for 'Red Hat Package Manager'.
+	used for checking, preparing, and installing required OS-level packages that Oracle depends on.
+
+	✅ RPM is a package format & package manager used in Linux systems (RHEL, Oracle Linux, CentOS, etc.) to install and manage software like this:
+
+	✅ before installing Oracle, we use:
+	 		-- yum install -y oracle-database-preinstall-19c
+
+	This is actually an RPM package provided by Oracle Linux that:
+
+	✅ Installs all required packages
+	✅ Creates oracle user + groups
+	✅ Sets kernel parameters
+	✅ Configures limits.conf
+	✅ Configures sysctl.conf
+
+----------------------------------------------------------------------
+
+2. What is Kernel parameter ?
+
+=> 	✅ kernel parameter control and limit the resources. 
+	✅ Kernel parameters are configuration settings that control how the operating 
+		system behaves. like - 
+				
+		🔹 Memory (RAM) :  	How much shared memory can be used, 
+					Max memory a single process can allocate
+
+		🔹 Processes :     	How many processes a user can run.
+					How many background + server processes Oracle can start.
+
+      🔹 Files & I/O :   How files and I/O work.
+
+----------------------------------------------------------------------
+
+3. What is ROOT.sh ?
+
+=> ✅ This script performs root-level system configuration required by Oracle software.SIDsid
+
+	🔹 Create necessary OS users/groups.
+	🔹 Create required directories.
+	🔹 Configures Oracle Inventory. (/etc/oraInst.loc).
+	🔹 Sets OS environment for Oracle like, ORACLE_HOME, ORACLE_BASE, ORACLE_SID
+----------------------------------------------------------------------
+
+4. Where is root.sh found?
+
+=> ✅ Inside ORACLE_HOME --> /u01/app/oracle/product/19.0.0/dbhome_1/root.sh
+----------------------------------------------------------------------
+
+5. What is orainstRoot.sh?
+
+=> ✅ This script creates the Oracle Inventory directory and sets permissions for all Oracle 
+	software.
+ 	
+ 		 🔹 Creates the Oracle Inventory directory.
+		 🔹 What Oracle products are installed.
+		 🔹 Where they are installed (Location).
+		 🔹 What patches are applied.
+		 🔹 Who owns which Oracle home.
+
+----------------------------------------------------------------------
+
+6. What is oraInventory ?
+
+=> ✅ oraInventory is a directory (folder) on the server that, 
+
+			🔹 Records which Oracle products are installed.
+			🔹 Stores their versions and patch history.
+			🔹 Tracks where Oracle Homes are located
+			🔹 when installing, upgrading, or patching Oracle
+
+----------------------------------------------------------------------
+
+6. ORACLE_HOME / ORACLE_BASE and ORA_inventory diffrence ?
+=> 
+
+----------------------------------------------------------------------
+7. What is inside of oraInventory?
+
+=> ✅ Inside oraInventory, Oracle stores metadata files that track all Oracle software 
+	installations.
+
+	🔹 List of all Oracle installations, Where each Oracle Home is located
+	🔹 Details of every product installed, (Database, Grid, Client, Listener, etc.)
+	🔹 Patch and upgrade history,
+	🔹 Log files of installation and patching.
+------------------------------------------------------------------------
+
+8. when we have PGA then why we need temp for sorting data ?
+
+=> ✅ PGA is used first for sorting but, Only if PGA memory is insufficient, Oracle spills 
+		the sort to TEMP tablespace.
+------------------------------------------------------------------------
+
+9. What is Read Consistency?
+
+=> ✅ Read consistency means: when you read data, Oracle shows you a clean and stable version of the data, even if other users are changing it at the same time.
+------------------------------------------------------------------------
+
+10. Difference between UNDO and REDO ?
+
+=> ✅ UNDO :	🔹 Stores the old data before a change
+			   	🔹 Used for ROLLBACK and read consistency
+
+	✅ REDO :  	🔹 Helps Oracle re-apply changes after a crash
+			     	🔹 Used for recovery, not rollback
+------------------------------------------------------------------------
+
+11. Purpose of PGA, SGA components ?
+
+=> ✅ PGA : 	🔹 When an SQL executes PGA store a private workspace for each session/users, 
+						so the query will execute smoothly.
+					🔹 It also used for Sorting (ORDER BY, GROUP BY) activity.
+
+	🔹 Important PGA components :-  Private SQL Area, Session Memory, Sort Area, Stack Space
+
+	✅ SGA : 	🔹 SGA stores shared data and control information needed by the entire database when instance starts. 
+
+	🔹 Important SGA components :-  Database Buffer Cache, Shared Pool, Redo Log Buffer,Large 
+											  Pool (optional), Java Pool, Streams Pool.
+------------------------------------------------------------------------
+
+12. When SGA got created ?
+
+=> ✅ The SGA is created during database startup, at the NOMOUNT stage.
+
+		🔹 NOMOUNT stage  ← SGA is created here
+
+			Oracle:
+
+			👉 Reads spfile / pfile
+
+			👉 Allocates SGA memory
+
+			👉 Starts background processes (SMON, PMON, DBWR, LGWR, CKPT, etc.)
+
+			👉 At this point:
+
+			👉 SGA exists
+
+			👉 Control files not yet read
+
+			👉 Database not yet mounted
+
+------------------------------------------------------------------------
+
+13. In which condition UGA not creted inside PGA ?
+
+=> ✅ UGA is NOT created inside PGA when the database is using SHARED SERVER mode.
+
+	🔹 Why this happens :
+
+		👉 In Dedicated Server, Each user has one dedicated server process.
+		👉 PGA belongs to that server process.
+		👉 So UGA is stored inside PGA.
+
+		In Shared Server, 
+
+		👉 Server processes are shared among many users.
+		👉 A shared server cannot keep session state in its PGA.
+
+			Therefore,
+
+		👉 UGA is moved to SGA.
+		👉 Stored in Large Pool.
+		👉 Or Shared Pool if Large Pool is not configured.
+
+------------------------------------------------------------------------
+
+14. Purpose of SGA  ? (which kind of process in SGA cover)
+
+=> ✅ SGA is a shared memory area for every session/users that oracle use to run the databse effecient and safety.
+
+		It exists so that:--
+
+		🔹 Data does not need to be read from disk again and again
+		🔹 SQL statements can be reused
+		🔹 Changes can be recovered after a crash
+		🔹 Multiple users can work at the same time
+------------------------------------------------------------------------
+
+13. Diffrence between PGA & UGA ?
+
+=> ✅ The PGA (Program Global Area) is a 'private workspace' in memory for each users/
+		sessions which connected to the Oracle database.
+
+		🔹 Sort area
+		🔹 Hash join area
+		🔹 Cursor execution state
+
+	✅ UGA: (User Global Area) is memory that stores session-related information. 
+		UGA is stored inside PGA.
+		
+		🔹 Login/session info
+		🔹 Session variables
+		🔹 Cursor state
+--------------------------------------------------------------------------
+
+14. Purpose of Redo Log Files ?
+
+=> ✅ Main purpose is, Oracle can recover data when database crashed. Redo log keep all the 			recored that changes to the database. So, if database got crashed it can start recovery
+		process. instance recovery.
+
+		👉 Without redo logs, Oracle cannot recover committed data after a crash.
+
+	✅ How redo logs are used (step-by-step) :
+
+		👉 Redo is written for every change, not only at COMMIT
+		👉 Changes are made in Database Buffer Cache
+		👉 Redo information is generated and placed in Redo Log Buffer
+		👉 On COMMIT, LGWR writes redo buffer to redo log files (disk)
+		👉 After a crash, Oracle uses redo log file to recover
+		👉 Oracle re-applies all changes found in redo log file (roll forward)
+		👉 Then UNDO recovery rolls back uncommitted transactions
+
+	💥 If database crashes -> Instance Recovery happens:
+
+		🔹 Step 1️. Roll Forward (REDO) :
+
+			👉 SMON reads redo log files.
+			👉 Re-applies all changes (committed + uncommitted).
+
+		🔹 Step 2️ Roll Back (UNDO recovery) :
+
+			👉 Oracle uses UNDO.
+			👉 Keep only commited changes.
+			👉 Removes uncommitted changes.
+			👉 Releases locks.
+--------------------------------------------------------------------------
+
+15. What is UNDO Read Consistency?
+
+=> ✅ UNDO read consistency means - 'Oracle uses UNDO data to show you the old value when
+		 someone else fetch the same data at the same time using select statment.
+
+	✅ Simple real-life example -
+
+		👉 User A -- UPDATE accounts SET balance = balance - 1000 WHERE id = 1; -- not committed
+		👉 User B (at the same time) -- SELECT balance FROM accounts WHERE id = 1;
+		👉 User B sees the old balance, not the changed one.
+
+--------------------------------------------------------------------------
+
+16. What is UNDO Retaintion policy ?
+
+=> ✅ UNDO retention policy means how long Oracle try to keep old data (undo information) 
+		before reusing it.
+
+		"Commit hone ke BAAD bhi, UNDO data ko kitni der tak preserve rakha jaaye — yahi UNDO Retention Policy hai." (15 minites)
+
+		"Commit hone ke baad bhi, UNDO data ko kam se kam 900 seconds (15 minites) tak mat delete karo."
+
+	✅	Parameter:
+		👉 UNDO_RETENTION = 900 seconds (default — 15 minutes)
+
+	✅ UNDO_RETENTION parameter --
+		👉 SHOW PARAMETER undo_retention;
+
+--------------------------------------------------------------------------
+16. Purpose of SYSTEM Tablespace ?
+
+=> ✅ SYSTEM tablespace stores the 'data dictionary' or 'meta deta', Without it database 
+		can not start. It is mandatory and critical.
+
+	✅ What is stored in SYSTEM tablespace --
+
+		👉 It stores metadata such as, Tables, indexes, views definitions
+		👉 Users and roles
+		👉 Privileges
+		👉 Tablespaces and datafiles
+--------------------------------------------------------------------------
+
+17. Where the meta data present in memory ?
+
+=> ✅ Metadata is physically stored in the SYSTEM tablespace (on disk) and,
+		 cached in memory in the Data Dictionary Cache inside the Shared Pool (SGA).
+--------------------------------------------------------------------------
+
+18. What is Soft parsing and Hard parsing ?
+
+=> ✅ Soft parsing -- Same SQL text already exists in Library Cache. Oracle reuses an 
+								existing execution plan from the Shared Pool.
+
+	✅ Hard parsing -- Newly SQL text that doesn't exists in Library Cache. Oracle creates 
+								a new execution plan for the SQL statement.
+--------------------------------------------------------------------------
+
+19. Do soft parsing need syntax and semantic checks? and why?
+
+=> ✅ Yes, soft parsing still requires some checks, but they are minimal.
+
+	🧠 Why any checks are needed --
+
+		👉 Even if Oracle reuses an execution plan, it must still ensure The SQL is still valid.
+		👉 The user is allowed or not to run it.
+		👉 The objects involved still exist or not. Otherwise, Oracle could return wrong or unauthorized data.
+--------------------------------------------------------------------------
+
+20. When LGWR process triggerd ?
+
+=> ✅ LGWR is triggered whenever Oracle writes redo log buffer → redo log files.
+--------------------------------------------------------------------------
+
+21. When SCN no generate in our database ? 
+
+=> ✅ In every nanosecond, generate the SCN number. When a statement is committed, then the 
+		SCN number will be added to this statement as a prefix.
+--------------------------------------------------------------------------
+
+22. How to check database up and running or not from the OS prompt ?
+
+=> 🔹 Check PMON process (Primary check) -->  ps -ef | grep pmon
+	🔹 select status from v$instance;
+--------------------------------------------------------------------------
+
+23. When ORA:01555 snapshot error occured ?
+
+=> ✅ ORA-01555 occurs when Oracle cannot provide old data required for read consistency
+		 because the undo tablespace information has been overwritten.
+
+	🔹 When ORA-01555 happens (step-by-step)
+
+		👉 A long SELECT query starts
+
+		👉 Oracle notes the SCN
+
+		👉 Other sessions perform UPDATE/DELETE
+
+		👉 Old data is written into UNDO
+
+		👉 UNDO gets overwritten
+
+		👉 SELECT needs old data → not found
+--------------------------------------------------------------------------
+what is inside library cache ?
+what is data dictionary ?
+what is db buffer cache ?
+ckpt ?
+-----------------------------------------
+25. What is LRUs Algorithm ? (Least Recent Used)
+=> Based of some algorithm oracle keep most frequent used data into DB buffer.
+----------------------------------------------------------------------------------
+26. Maximumm size of datafile ?
+=> 32GB
+----------------------------------------------------------------------------------
+27. Temp tablespace view ?
+=> desc v$tempfile;
+----------------------------------------------------------------------------------
+28. In which view we can see temp tablespace and datafiles all together ?
+=> desc dba_temp_files;
+-----------------------------------------------------------------------------------
+29. What is ARCn process ? Purpose of this ?
+=> Redo Log Files ki copy Archive location pe banata hai.
+
+Group 1 FULL hua
+Log Switch hua!
+      │
+      ▼
+ARCn jaagta hai
+Group 1 ki copy banata hai:
+/archivelog/arch_0001.arc
+      │
+      ▼
+Ab LGWR safely
+Group 1 overwrite kar sakta hai!
+Koi data loss nahi! ✅
+============================= EXAMPLE 2 ::
+
+Redo Log Files CIRCULAR hain:
+
+Group 1 → Group 2 → Group 3 → Group 1...
+
+Log Switch hone pe
+LGWR purana Group OVERWRITE karta hai!
+
+Agar ARCn ne copy nahi ki →
+Purana Redo data GAYA! 😱
+Recovery IMPOSSIBLE! ❌
+
+ARCn ne copy ki →
+Archive mein safe hai! ✅
+Recovery POSSIBLE! ✅
+-----------------------------------------------------------------------------------
+
+30. User lock & expired lock diffrence ?
+
+=> ✅ user lock - when a user is working on any table oracle creates a lock on this user.
+				 (unless commit)
+   ✅ expired lock - when passsword got expired of any user.
+-----------------------------------------------------------------------------------
+
+31. Types of shutdown modes ?
+=>  
+SHUTDOWN 4 types
+   │
+   ├── 1. NORMAL
+   ├── 2. TRANSACTIONAL
+   ├── 3. IMMEDIATE
+   └── 4. ABORT
+
+🔵 1. SHUTDOWN NORMAL - oracle wait until all users get disconnected.
+
+🟢 2. SHUTDOWN TRANSACTIONAL - 	Current TRANSACTIONS complete hone deta hai - then 
+											disconnected.
+
+🟠 3. SHUTDOWN IMMEDIATE - 	"Fast aur Clean" shutdown! Current transactions ROLLBACK ho 
+										jaati hain — Users forcefully disconnect!
+
+🔴 4. SHUTDOWN ABORT - "Emergency" shutdown! - Sab kuch turant STOP!
+-----------------------------------------------------------------------------------
+
+32. SMALLFILE Tablespace & BIGFILE Tablespace diffrence ?
+ 
+=> 🔵 SMALLFILE Tablespace -- Multiple Datafiles ho sakte hain in 1 tablespace.
+✅ Max Datafiles per Tablespace = 1022 datafiles
+✅ Max size per Datafile = 32GB (8K block size pe)
+✅ Max total Tablespace size:= 1022 × 32GB = ~32 TB -- Default type hai Oracle mein!
+
+✅ Example:
+
+CREATE TABLESPACE my_tbs
+DATAFILE '/u01/data/my_tbs01.dbf' SIZE 1G,
+         '/u01/data/my_tbs02.dbf' SIZE 1G,
+         '/u01/data/my_tbs03.dbf' SIZE 1G;
+-- Multiple datafiles! 
+
+🟠 BIGFILE Tablespace -- Sirf EK Datafile hota hai ek tablespace mein! But wo ek file bahut
+								  BADI ho sakti hai!
+👉 Max Datafiles per Tablespace: = Sirf 1 datafile!
+👉 Max size per Datafile: = 32TB (8K block size pe)
+👉 Max total Tablespace size: = 32TB
+
+✅ Example:
+
+CREATE BIGFILE TABLESPACE my_big_tbs 
+DATAFILE '/u01/data/my_big_tbs.dbf' SIZE 10G AUTOEXTEND ON MAXSIZE 32T;
+-- Sirf ek datafile!  
+-----------------------------------------------------------------------------------
+
+33. Maximumm how many data file we can add ?
+
+=> 👉 Main Parameter: DB_FILES 
+	👉 SHOW PARAMETER db_files; OR v$parameter
+	👉 db_files = 200
+-----------------------------------------------------------------------------------
+
+34. what is Default data block size And how to check ? 
+
+=> 👉 8 KB (8192 bytes)
+	👉 SHOW PARAMETER db_block_size; OR v$parameter;
+-----------------------------------------------------------------------------------
+
+35. Maximum datafile size kitna hota hai?
+
+=> 🔹 1. Smallfile Tablespace Datafile Limit 
+		👉 8 KB (default) block size -- 32 GB
+
+	🔹 2. Bigfile Tablespace Limit
+		👉 8 KB  block size  -- 32 TB
+		👉 32 KB  block size -- 128 TB
+-----------------------------------------------------------------------------------
+
+36. What is view ? Types of view ?
+
+=> 👉 "Virtual table hai — data store nahi hota,sirf saved query hai. Security aur data 
+		simplicity ke liye use hota hai."
+
+	👉	VIEWS
+	  │
+	  ├── 1. Simple View - Single table se, No group functions,  DML possible hai!
+	  ├── 2. Complex View - Multiple tables ya group functions, DML generally NOT possible!
+	  └── 3. Inline View - Query ke andar temporary view, CREATE nahi hota — sirf query mein!
+-----------------------------------------------------------------------------------
+
+37. When we add tablespace amd resize tablespace ? which senario ?
+
+=> 👉 Tablespace Add -- When existing tablespace pe space kam ho for adding new reqirments.
+		 Common Scenarios -- keep diffrents objects separate.
+		 							Adding new mudules in the database.
+		 							
+	SYNTAX -- CREATE TABLESPACE 'tablespace_name' DATAFILE '/u01/oradata/app01.dbf' SIZE 1G;
+
+	👉 Tablespace Resize -- Usually we used for increasing datafile's space.
+
+	SYNTAX -- ALTER DATABASE DATAFILE '/u01/oradata/users01.dbf' RESIZE 5G;
+-----------------------------------------------------------------------------------
+
+38. Scope = both, Scope = memery,  Scope = spfile - purposes ?
+
+👉 SCOPE = BOTH
+
+DONO jagah change hota hai!
+RAM + SPFILE!
+
+Turant effect! ✅
+Restart ke baad bhi! ✅
+
+USE CASE:
+Permanent change chahiye!
+Abhi bhi aur restart ke
+baad bhi!
+
+MOST COMMONLY USED! 
+
+✅ Example: ALTER SYSTEM SET UNDO_RETENTION = 3600 SCOPE = BOTH;
+
+👉 SCOPE = MEMORY
+
+Sirf RAM mein change hota hai!
+SPFILE mein NAHI jaata!
+
+Database restart hone pe
+change GONE! 😱
+Purana value wapas! 
+
+USE CASE:
+Temporary fix chahiye!
+Test karna hai!
+Production pe turant
+effect chahiye!
+
+✅ Example: ALTER SYSTEM SET UNDO_RETENTION = 3600 SCOPE = MEMORY;
+
+👉 SCOPE = SPFILE
+
+Sirf SPFILE mein change hota hai!
+RAM mein NAHI jaata!
+
+ABHI effect NAHI!
+Restart ke baad effect! 
+
+USE CASE:
+Static parameters jo
+running instance mein
+change nahi ho sakte!
+Next restart pe chahiye!
+
+✅ Example: ALTER SYSTEM SET UNDO_RETENTION = 3600 SCOPE = SPFILE;
+-----------------------------------------------------------------------------------
+
+39. catalog.sql and catproc.sql purpose ?
+
+👉 Catalog.sql -- create data dictionaries views (DBA_*, V$*, USER_*)
+👉 Catproc.sql -- Create PL/SQL packages and procedures. (DBMS_OUTPUT, DBMS_SQL)
+
+-----------------------------------------------------------------------------------
+
+40. Manual Database creation steps ?
+
+👉 1. Set the Oracle environment variabels. 
+
+	export ORACLE_SID=ORCL
+	export ORACLE_HOME=/u01/app/oracle/product/19.0.0/dbhome_1
+	export PATH=$ORACLE_HOME/bin:$PATH
+
+👉 2. Create the initialization parameter file (PFILE) -- initORCL.ora
+
+	db_name=ORCL
+	memory_target=1G
+	control_files='/u01/oradata/ORCL/control01.ctl'
+	compatible='19.0.0'
+	undo_management=AUTO
+	undo_tablespace=UNDOTBS1
+	db_block_size=8192
+
+👉 3. Create required directories
+
+	mkdir -p /u01/oradata/ORCL
+	mkdir -p /u01/fast_recovery_area
+	mkdir -p /u01/admin/ORCL/adump
+
+👉 4. Start the instance in NOMOUNT mode
+
+	STARTUP NOMOUNT;
+	SELECT status FROM v$instance;
+
+👉 5. Execute the CREATE DATABASE statement
+
+	CREATE DATABASE ORCL
+	USER SYS IDENTIFIED BY Oracle123
+	USER SYSTEM IDENTIFIED BY Oracle123
+	LOGFILE
+	  GROUP 1 ('/u01/oradata/ORCL/redo01.log') SIZE 100M,
+	  GROUP 2 ('/u01/oradata/ORCL/redo02.log') SIZE 100M,
+	  GROUP 3 ('/u01/oradata/ORCL/redo03.log') SIZE 100M
+	MAXLOGFILES 16
+	MAXLOGMEMBERS 3
+	MAXDATAFILES 200
+	CHARACTER SET AL32UTF8
+	NATIONAL CHARACTER SET AL16UTF16
+	EXTENT MANAGEMENT LOCAL
+	DATAFILE '/u01/oradata/ORCL/system01.dbf'
+	SIZE 800M REUSE
+	SYSAUX DATAFILE '/u01/oradata/ORCL/sysaux01.dbf'
+	SIZE 600M REUSE
+	DEFAULT TABLESPACE users
+	DATAFILE '/u01/oradata/ORCL/users01.dbf'
+	SIZE 100M AUTOEXTEND ON
+	DEFAULT TEMPORARY TABLESPACE temp
+	TEMPFILE '/u01/oradata/ORCL/temp01.dbf'
+	SIZE 100M
+	UNDO TABLESPACE undotbs1
+	DATAFILE '/u01/oradata/ORCL/undotbs01.dbf'
+	SIZE 300M AUTOEXTEND ON;
+
+👉 6. Run Oracle catalog scripts
+
+	@?/rdbms/admin/catalog.sql
+	@?/rdbms/admin/catproc.sql
+
+
+👉 7. Create an SPFILE
+
+	CREATE SPFILE FROM PFILE;
+
+
+👉 8. Restart the database:
+
+	SHUTDOWN IMMEDIATE;
+	STARTUP;
+
+👉 9. Verify the database
+
+	SELECT name, open_mode FROM v$database;
+	SELECT instance_name, status FROM v$instance;
+
+
+👉 10. Configure the listener - listener.ora & tnsnames.ora
+
+	LISTENER =
+	  (DESCRIPTION_LIST =
+	    (DESCRIPTION =
+	      (ADDRESS = (PROTOCOL = TCP)(HOST = server01)(PORT = 1521))
+	    )
+	  )
+
+
+👉 11. Start listener.
+
+-----------------------------------------------------------------------------------
+
+41. Diffrence between DROP,DELETE & TRUNCATE ?
+
+👉 DELETE → Data removed, space not released.
+👉 TRUNCATE → Data removed, space released, table remains.
+👉 DROP → Data + table removed, all space released.
+-----------------------------------------------------------------------------------
+
+42. Diffrence between SYS and SYSTEM user ?
+
+👉 SYS:  i> SYS user is owner of the Oracle data dictionary.
+			ii> It has the SYSDBA privilege.
+
+👉 SYSTEM:  i> SYSTEM user used for an administrativ purpose.
+				ii> It has the DBA role but does not own the data dictionary.
+
+-----------------------------------------------------------------------------------
+
+42. What is auditing ? Types od auditing ?
+
+👉 Auditing :: Auditing is the process of tracking and recording user and database 
+					activities in Oracle.
+
+👉 3 Types of Auditing.
+
+👉 1. Standard Auditing -- Audits SQL statements, privileges, and objects.
+👉 2. Fine-Grained Auditing (FGA) -- Audits specific rows or columns based on conditions.
+👉 3. Unified Auditing -- RMAN, Data Pump, and other audit records into a single audit trail.
+
+-----------------------------------------------------------------------------------
+
+43. Where audit log store ?
+
+👉 1. Standard Auditing -- In the database. if AUDIT_TRAIL=DB.
+
+-- SELECT * FROM DBA_AUDIT_TRAIL;
+
+👉 2. Fine-Grained Auditing (FGA) -- SELECT * FROM DBA_FGA_AUDIT_TRAIL;
+
+👉 3. Unified Auditing -- SELECT * FROM UNIFIED_AUDIT_TRAIL;
+
+-----------------------------------------------------------------------------------
+
+44. Alert log file purpose ?
+
+👉 Alert Log is a diagnostic log file that records important events, errors, and status
+	genarated by the Oracle.
+
+👉 Purpose : 
+------------- 
+-- Helps monitor database activity.
+-- Helps troubleshoot errors and failures.
+-----------------------------------------------------------------------------------
+
+45. Enable password verify function ?
+
+👉 Alter PROFILE default LIMIT PASSWORD_VERIFY_FUNCTION ora12c_verify_function;
+
+-----------------------------------------------------------------------------------
+
+46. How to do Flashback transactional ?
+
+👉 desc flashback_transaction_query;
+👉 SELECT operation,undo_sql,commit_scn,commit_timestamp FROM flashback_transaction_query;
+
+-----------------------------------------------------------------------------------
+
+47. How to check flashback enable or not ?
+
+👉 SELECT flashback_on FROM v$database;
+-----------------------------------------------------------------------------------
+
+48. How to enable flashback ?
+
+👉 SHUTDOWN IMMEDIATE;
+👉 STARTUP MOUNT;
+👉 Alter database FLASHBACK ON;
+-----------------------------------------------------------------------------------
+

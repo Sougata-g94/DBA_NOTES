@@ -1,0 +1,234 @@
+Upgradation steps :
+------------------------------
+1. go to / mount point -> [oracle@localhost OPatch]$ cd / 
+2. go to root user -> [oracle@localhost /]$ su root
+3. create a full directory path -> [root@localhost /]# mkdir -p /u02/app/oracle/product/12/db
+4. looking for 12c software -> [root@localhost /]# df -h
+5. go to sharefolder location -> [root@localhost /]# cd /media/sf_newsharefolder
+6. unzip the 12c software -> [root@localhost sf_newsharefolder]# unzip linuxx64_12201_database.zip -d /u02/app/oracle/product/12/db
+
+7. After unzip go to the location where unzip this s/w -> [root@localhost sf_newsharefolder]# cd /u02/app/oracle/product/12/db
+
+8. Do ls- ltrh (you see the directory called 'database') -> [root@localhost db]# ls -ltrh  
+9. change owner -> [root@localhost db]# chown -R oracle:oinstall /u02
+
+10. exit from root user -> [root@localhost db]# exit
+
+11. go to the location now from oracle user -> [oracle@localhost /]$ cd /u02/app/oracle/product/12/db/
+
+12. go to database directory -> [oracle@localhost db]$ cd database
+
+13. Here you can see the 'runInstaller'. We'll do runInstaller -> ./runInstaller
+
+14. After Install 12c software we'll do database creation on bin location using -> ./dbca
+
+***** To upgradation we're using 2 method - (i) 'dbua'  (ii) 'autoupdate.jar' utility feature.
+We'll do manually that is 'autoupdate' utility feature. ***
+
+15. How to check which version of database we're running ?
+=> sql> show parameter compatible;
+
+16. We can create some random tables with data insert so after upgrade to 19c we can identify that this is our database. 
+
+17. Before upgradation we have to take backup in production database.
+
+
+18. Then we have to check invalid objects and owner should be 'SYS', there shouldn't be any invalid object of
+owner 'SYS'. (command below to check invalid objs)
+==> select owner,object_name,object_type from dba_objects where status='INVALID' and owner='SYS';
+
+
+19. If you get 'INVALID' objects you have to re-validate these objects. command to re-validate
+object below. 
+===>  @$ORACLE_HOME/rdbms/admin/utlrp.sql
+
+
+20. During upgradation you make sure your states will be up to dated. If states not up to dated then you have to make it. Check stats up to date or not command is below -
+==> 
+set lin 200 pages 200
+col owner for a20
+col INDEX_NAME for a25
+col TABLE_NAME for a20
+col LAST_ANAL_STA for a20
+select owner,INDEX_NAME,TABLE_NAME,LAST_ANALYZED,STALE_STATS from dba_ind_statistics where owner='SYS' and STALE_STATS='YES';
+
+21. After that we'll do 'Dictionary gather statistics' using packages. The packages is below command -
+=> EXEC DBMS_STATS.GATHER_DICTIONARY_STATS;
+
+DBMS_STATS is a 'Procedures' & GATHER_DICTIONARY_STATS is a statistics or packages.
+
+22. Next, we've to check Recyclebin. Because, during upgradation if there are any objects in recyclebin then the upgradation process might be kill. So, we've to check recyclebin and make sure there shouldn't be any objects. the command for the check is below -
+
+==> select count(*) from dba_recyclebin;
+
+23. If there is any objects present in dba_recyclebin then we've to purge recyclebin 
+OR, if not present in dba_recyclebin then also for safety purpose we've to purged it using 'purge dba_recyclebin' command. 
+==> purge dba_recyclebin;
+
+24. Next, we'll create a directory in our target home location where 19c binary store. So, we'll create 
+    a directory with any naming conviction (ex: upgrade_to_19c). 
+    The purpose of creation this directory is - whatever upgradation logs will genarate, all logs will be capture in this location. Only upgradation logs.
+
+** 25. How many stages of upgradation and what are they ??
+==> There are 4 main stages of upgradations. 
+	i) Analyze ii) Fixups  iii) Deploy  iv) Upgrade  --- using autoupgrade.jar utility
+
+
+** 26. What is the location of 'autoupgrade.jar' utility ? How to find ?
+===> find /u01 -name autoupgrade*.jar
+===> Location is - '/u01/app/oracle/product/19/db/rdbms/admin/autoupgrade.jar'
+
+** 27. Now, To run 'autoupgrade.jar' file we've to run 'java -jar' is the keyword to run autoupgrade.jar file. 
+To run any .jar file we've to run 'java -jar' keyword. 
+
+28. How to run 'java -jar' keyword to run 'autoupgrade.jar' file ?
+==> java -jar /u01/app/oracle/product/19/db/rdbms/admin/autoupgrade.jar
+
+29. Now, as we're gonna create sample configaration file so our command sould look like - 
+==> java -jar /u01/app/oracle/product/19/db/rdbms/admin/autoupgrade.jar -create_sample_file config
+
+
+30. After created 'sample_config.cfg' file, we can rename this file name to 'test101.cfg'. (If we want to).
+
+31. Then, Edit the nesessery update in the 'sample_config.cfg' or 'test101.cfg' file using vi connamd.
+===> vi test101.cfg
+
+32. After that, now we start using the modes. (like, ANALYZE, FIXUP, DEPLOY, UPGRADE).
+===> java -jar /u01/app/oracle/product/19/db/rdbms/admin/autoupgrade.jar -config test101.cfg -mode ANALYZE
+
+************************************* OUTPUT OF ANALYZE JOB **********************************************
+
+[oracle@localhost upgrade_to_19c]$ java -jar /u01/app/oracle/product/19/db/rdbms/admin/autoupgrade.jar -config test101.cfg -mode ANALYZE
+AutoUpgrade is not fully tested on OpenJDK 64-Bit Server VM, Oracle recommends to use Java HotSpot(TM)
+AutoUpgrade 21.3.211115 launched with default options
+Processing config file ...
++--------------------------------+
+| Starting AutoUpgrade execution |
++--------------------------------+
+1 databases will be analyzed
+Type 'help' to list console commands
+
+upg> lsj
++----+-------+---------+---------+-------+--------------+--------+----------------+
+|Job#|DB_NAME|    STAGE|OPERATION| STATUS|    START_TIME| UPDATED|         MESSAGE|
++----+-------+---------+---------+-------+--------------+--------+----------------+
+| 100|test101|PRECHECKS|PREPARING|RUNNING|24/08/11 22:29|22:30:48|Remaining 91/101|
++----+-------+---------+---------+-------+--------------+--------+----------------+
+Total jobs 1
+
+upg> lsj
++----+-------+---------+---------+-------+--------------+--------+------------------+
+|Job#|DB_NAME|    STAGE|OPERATION| STATUS|    START_TIME| UPDATED|           MESSAGE|
++----+-------+---------+---------+-------+--------------+--------+------------------+
+| 100|test101|PRECHECKS|PREPARING|RUNNING|24/08/11 22:29|22:31:44|Generating Reports|
++----+-------+---------+---------+-------+--------------+--------+------------------+
+Total jobs 1
+
+upg> Job 100 completed
+------------------- Final Summary --------------------
+Number of databases            [ 1 ]
+
+Jobs finished                  [1]
+Jobs failed                    [0]
+Jobs pending                   [0]
+
+Please check the summary report at: 
+/u01/upgrade_to_19c/global_logs/cfgtoollogs/upgrade/auto/status/status.html
+/u01/upgrade_to_19c/global_logs/cfgtoollogs/upgrade/auto/status/status.log
+[oracle@localhost upgrade_to_19c]$ 
+
+
+*********************** OUTPUT OF ANALYZE JOB COMPLETE *********************************
+
+33. After done ANALYZE, now we run FIXUPS. (like, ANALYZE, FIXUP, DEPLOY, UPGRADE).
+===> java -jar /u01/app/oracle/product/19/db/rdbms/admin/autoupgrade.jar -config test101.cfg -mode FIXUPS
+
+
+************************************* OUTPUT OF FIXUPS JOB **********************************************
+
+[oracle@localhost upgrade_to_19c]$ java -jar /u01/app/oracle/product/19/db/rdbms/admin/autoupgrade.jar -config test101.cfg -mode FIXUPS
+AutoUpgrade is not fully tested on OpenJDK 64-Bit Server VM, Oracle recommends to use Java HotSpot(TM)
+AutoUpgrade 21.3.211115 launched with default options
+Processing config file ...
++--------------------------------+
+| Starting AutoUpgrade execution |
++--------------------------------+
+1 databases will be processed
+Type 'help' to list console commands
+upg> lsj
++----+-------+---------+---------+-------+--------------+--------+----------------------------+
+|Job#|DB_NAME|    STAGE|OPERATION| STATUS|    START_TIME| UPDATED|                     MESSAGE|
++----+-------+---------+---------+-------+--------------+--------+----------------------------+
+| 101|test101|PRECHECKS|PREPARING|RUNNING|24/08/11 22:43|22:43:00|Loading database information|
++----+-------+---------+---------+-------+--------------+--------+----------------------------+
+Total jobs 1
+
+upg> lsj
++----+-------+---------+---------+-------+--------------+--------+----------------------------+
+|Job#|DB_NAME|    STAGE|OPERATION| STATUS|    START_TIME| UPDATED|                     MESSAGE|
++----+-------+---------+---------+-------+--------------+--------+----------------------------+
+| 101|test101|PREFIXUPS|EXECUTING|RUNNING|24/08/11 22:43|22:44:13|Loading database information|
++----+-------+---------+---------+-------+--------------+--------+----------------------------+
+Total jobs 1
+
+upg> Job 101 completed
+------------------- Final Summary --------------------
+Number of databases            [ 1 ]
+
+Jobs finished                  [1]
+Jobs failed                    [0]
+Jobs pending                   [0]
+
+Please check the summary report at: 
+/u01/upgrade_to_19c/global_logs/cfgtoollogs/upgrade/auto/status/status.html
+/u01/upgrade_to_19c/global_logs/cfgtoollogs/upgrade/auto/status/status.log
+
+*********************** OUTPUT OF FIXUPS JOB COMPLETE *********************************
+
+33. After done FIXUPS, now we run DEPLOY. (like, ANALYZE, FIXUP, DEPLOY, UPGRADE).
+===> java -jar /u01/app/oracle/product/19/db/rdbms/admin/autoupgrade.jar -config test101.cfg -mode DEPLOY
+
+************************************* OUTPUT OF DEPLOY JOB **********************************************
+
+[oracle@localhost upgrade_to_19c]$ java -jar /u01/app/oracle/product/19/db/rdbms/admin/autoupgrade.jar -config test101.cfg -mode DEPLOY
+AutoUpgrade is not fully tested on OpenJDK 64-Bit Server VM, Oracle recommends to use Java HotSpot(TM)
+AutoUpgrade 21.3.211115 launched with default options
+Processing config file ...
++--------------------------------+
+| Starting AutoUpgrade execution |
++--------------------------------+
+1 databases will be processed
+Type 'help' to list console commands
+upg> lsj
++----+-------+---------+---------+-------+--------------+--------+----------------------------+
+|Job#|DB_NAME|    STAGE|OPERATION| STATUS|    START_TIME| UPDATED|                     MESSAGE|
++----+-------+---------+---------+-------+--------------+--------+----------------------------+
+| 102|test101|PRECHECKS|PREPARING|RUNNING|24/08/11 23:54|23:55:07|Loading database information|
++----+-------+---------+---------+-------+--------------+--------+----------------------------+
+Total jobs 1
+
+upg> lsj
++----+-------+---------+---------+-------+--------------+--------+------------+
+|Job#|DB_NAME|    STAGE|OPERATION| STATUS|    START_TIME| UPDATED|     MESSAGE|
++----+-------+---------+---------+-------+--------------+--------+------------+
+| 102|test101|DBUPGRADE|EXECUTING|RUNNING|24/08/11 23:54|02:28:39|91%Upgraded |
++----+-------+---------+---------+-------+--------------+--------+------------+
+Total jobs 1
+
+upg> Job 102 completed
+------------------- Final Summary --------------------
+Number of databases            [ 1 ]
+
+Jobs finished                  [1]
+Jobs failed                    [0]
+Jobs pending                   [0]
+
+---- Drop GRP at your convenience once you consider it is no longer needed ----
+Drop GRP from test101: drop restore point AUTOUPGRADE_9212_TEST101122010
+
+
+Please check the summary report at: 
+/u01/upgrade_to_19c/global_logs/cfgtoollogs/upgrade/auto/status/status.html
+/u01/upgrade_to_19c/global_logs/cfgtoollogs/upgrade/auto/status/status.log
+
+*********************** OUTPUT OF DEPLOY JOB COMPLETE *********************************

@@ -1,0 +1,527 @@
+1. How many type of REPORT ?
+	=> 3 types of report. ASH,AWR,ADDM
+
+	i. ASH (Autometic Session History) :- 
+
+							👉 Session history (now on wards to last 10 or 15 mnt), 
+							👉 top 20 DQL query commands, 
+							👉 top 20 SQL statment, 
+							👉 top I/O (Physical Read).
+							👉 current running session report.
+
+
+
+	ii. AWR (Autometic Workload Repository) :- 
+
+							👉 Session history (last 10 or 15 mnt), This report fetch all three on above as well as entire database utilisation report display.
+							👉 hit ratio, 
+							👉 advisory report, 
+							👉 PGA utilisaation.
+							👉 Sysaux tablespace store all the data which AWR report genarate.
+
+			WHEN :: Example, we've to get a report 7 days ago report history. Get Back history report featching we used AWR report.  
+
+
+	iii. ADDM (Autometic Database Diogonostic Monitoring) :- 
+
+							ADDM analyzes AWR data to automatically detect performance issues and provides recommendation solution. Only For Advisory.
+
+							👉 ADDM analyze data and provide Solution
+							👉 ADDM detect Slow SQL
+							👉 CPU overloaded
+							👉 SGA / PGA shortage
+
+======================================================================================
+
+2. If any query runing slow how to fix it ? what will be the steps ?
+
+=> 👉 TOP command to check the status of resources, processors, memory
+	👉 alertlog. to verify no ORA-error occures.
+
+-----------------------------------------------------------------------------------------------
+2. OEM tools used for ?
+=> When login Oracle Enterprise Manager (OEM) tool and select that database which was affecting is used for display all top queries which are running.
+--------------------------------------------------------------------------------------------
+
+3. Location of awrrpt.sql ?
+=> cd $ORACLE_HOME/rdbms/admin
+---------------------------------------------------------------------------------------------
+
+4. Run awrrpt.sql file ?
+=> SQL> @awrrpt.sql - report_type (default takes 'HTML') - value of number_days (ex, 20) - began_snap id to end_snap id.
+-------------------------------------------------------------------------------------------------------------
+5. What is wait events ? How many wait events are there ?
+=>
+-----------------------------------------------------------------------------------------------
+
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ Statistics Gather ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+
+5. 'Stale Statistics' kya hota hai ?
+
+=> 👉 Jab table ka data kaafi change ho jata hai (insert, update, delete se), tab purane statistics outdated / stale ho jaate hain.
+
+	👉 Oracle generally stats ko stale mark karta hai jab table ke around 10% ya usse zyada rows change ho jati hain.
+-----------------------------------------------------------------------------------
+
+6. What is the 'Stale statistics status' ?
+
+=> 📌 Whenever any table needs to 'stale gather' oracle enable the 'stale stats on' feature of that table. And, then we as a DBA do stats gathered on these table where the stale stats on.
+
+	📌How to do that - 
+
+✅ GATHER_TABLE_STATS - for tables
+✅ GATHER_SCHEMA_STATS - for schema
+✅ GATHER_DATABASE_STATS - for DB
+✅ GATHER_INDEX_STATS - for index
+
+⚡ Check if any table has stale stats or not -
+
+📌 View - desc dba_tab_statistics;
+📌 select owner, index_name, stale_stats from dba_ind_statistics where stale_stats='YES' and owner='HR';
+
+⚡ If stale stats 'YES' found then how to gather states - 
+📌 command - exec DBMS_STATS.GATHER_TABLE_STATS (ownname => 'HR', tabname => 'EMP');
+
+--------------------------------------------------------------------------------------
+
+7. 'Stale Gather' kyun karte hain?
+
+=> 👉 When 'Stale stats' happend optimizer can choose wrong execution plan. 
+	👉 Query can became slow.
+	👉 Performance might be degraded.
+----------------------------------------------------------------------------------
+
+8. When we do 'Stats gather' ?
+
+=> 👉 We gather statistics when there are significant data changes such as bulk inserts, deletes, or updates, so that the optimizer can generate an efficient execution plan.
+
+----------------------------------------------------------------------------------
+
+
+15. Why we do 'Stats Gather' ?
+
+=>	📌 Stats Gather = Collecting information about tables, indexes, columns inside the database.
+
+	📌 Oracle needs this information to decide the best and fastest path to execute your queries.
+
+	✅ If the database knows how big a table is, how many rows, how the data is distributed, then it can make smart decisions to run your SQL faster.
+
+-------------------------------------------------------------------------------------------
+
+17. How to do 'STALE GATHER' of any table or schema or database or index ?
+
+=> ✅ GATHER_TABLE_STATS - for tables
+	✅ GATHER_SCHEMA_STATS - for tables
+	✅ GATHER_DATABASE_STATS - for tables
+	✅ GATHER_INDEX_STATS - for tables
+
+----------------------------------------------------------------------------------------
+
+18. What is meaning of 'STATISTTICS' ?
+
+=> ✅ Whatever input optimizer is collect that called 'STATISTTICS'. These input are help optimizer to choose a best execution plan for SQL query. 
+
+   📌 SENARIO :- Suppose, on 'EMP' table 12AM stat gather has done. Means, optimizer knows how many records like, rows, columns, indexes etc has in 'EMP' table (example- 10k). 
+
+   📌 Now, After 12AM (12am to 7am) somebody inserted bulk records. Suppose 10k more records added now and in between indexes also drop by someone. 
+
+   📌 Now, When stat gather has done at 12AM after that all the activities that are happend optimizer doesn't know about that. 
+   So, in that senario when optimizer give plan it's very high to that plan will not be proper and bad plan. And this plan will be harmfull for queries.
+-------------------------------------------------------------------------------------------
+
+19. So, now the Question is how we get to know on which table needs to genarate statistics ?
+
+=> ✅ 
+-------------------------------------------------------------------------------------------
+
+20. What is the 'Stale Statistics Status' ?
+
+=> ✅ jab bhi koi table pe statistics gather karna zaroori hain oracle internally us
+table ke upar ek stale stats flag on karta hain so that as a DBA we can understand jis jis  table ke upad stale stats = true/on hain uss table me statistics gather karna must hain. otherwise performance degrade hoga. 
+-------------------------------------------------------------------------------------------
+
+20. How we get to know on which table we need to genarate 'Stats Gather' ?
+
+=> 📌 Oracle internally maintain a flag called 'STALE' column, when any table needs to
+ 'states gather' this 'STALE' column will be 'true or enabled'. 
+ Oracle tells us that we need to gather stats on this table otherwise the execution plan will come bad.
+
+   📌 desc dba_ind_statistics; (for index statistics)
+   📌 desc dba_tab_statistics; (for table statistics)
+
+   📌 Select owner,index_name,stale_stats from dba_ind_statistics where stale_stats='YES' and owner='HR';
+
+   📌 Select owner,table_name,stale_stats from dba_tab_statistics where stale_stats='YES' and owner='HR';
+
+ ✅ Now, this query might display no rows because, this table is newly created and when bulk records will inserted then in some points it will show 'yes'. 
+
+ ✅ To insert bulk records our query will be -
+
+     📌 insert into new_emp select * from new_emp; (new_emp previous 107 records, after select * from new_emp is append same records 107 * 2 = 214)
+
+--------------------------------------------------------------------------------------------
+
+20. How to gather table stats if we found stale 'YES' on any table? 
+
+=> 📌Exec 
+		DBMS_STATS.GATHER_TABLE_STATS(
+		ownname => 'HR',
+		tabname => 'NEW_EMP',
+		cascade => TRUE
+		);
+
+		after done it show - (pl/sql procedure succesfully completed), Now, check stats done or not.
+
+   📌 select owner,table_name,stale_stats from dba_tab_statistics where owner='HR';
+---------------------------------------------------------------------------------------------
+
+6. What is DB time and Elapsed time ?
+
+=>	 📌DB Time :: Total time spent inside the database. 
+				Includes: CPU time + Wait time (like waiting for I/O, locks, etc.) 
+				Only counts the time when the session is actively working or waiting in the database.
+
+				DB Time = SUM (All SQL CPU time) + SUM (ALL SQL wait time)
+
+ 				🔍 Think of it like ::
+				"How much time your database was busy working or waiting on something for a user's request."
+
+	📌Elapsed Time :: Total time taken from start to finish for a task or operation.
+
+					Includes everything - idle time, DB time, network delay, application-side wait, etc.
+					It's the total clock time.
+
+					🔍 Think of it like ::
+					"How much time it actually took for the task to complete — including database and non-database parts."
+
+	🔍 Use Case Example ::
+				Let’s say a user runs a report that takes 10 seconds to finish.
+
+				DB Time might be 6 seconds (actual work in DB like fetching, joining, waiting on I/O).
+
+				Elapsed Time is 10 seconds (includes 4 seconds of waiting outside the DB — maybe in the app or network).
+
+---------------------------------------------------------------------------------------------------------------
+
+7. How to find out the SQL ID for each statement?
+
+=> 	🔍Every SQL statement that runs in Oracle gets a unique ID called SQL ID.
+
+	✅ Why SQL ID is Important for Performance Tuning?
+
+	📌 Track down slow or problematic queries
+	📌 Check how often the query ran
+	📌 Analyze wait events, disk usage, buffer gets, etc.
+
+	✅ SELECT sql_id, sql_text FROM v$sql WHERE sql_text LIKE '%EMPLOYEES%';
+---------------------------------------------------------------------------------------------------------------
+
+8. What is last Table Analyze?
+
+=> 	🔍 It refers to the last time Oracle collected stats for a table.
+	🔍 When you analyze a table, Oracle collects statistics about the table and its data. (row,column,index etc)
+
+	📌 These stats help the Oracle optimizer decide:
+
+	📌 The best path to access data (index or full scan?)
+
+	📌 The most efficient execution plan for SQL queries
+
+	✅ SELECT table_name, last_analyzed FROM dba_tables WHERE owner = 'HR'; 
+--------------------------------------------------------------------------------------------
+
+9. how to find out whether your statement 'index scanning' or 'full scanning' ?
+
+=>	📌 Full Table Scan - Oracle is reading every row in the table like flipping every page in a book.
+	📌 Index Scan - Oracle is using an index like a table of contents to jump directly to what it needs.
+
+	✅ EXPLAIN PLAN FOR SELECT * FROM employees WHERE employee_id = 100;
+
+	✅ SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+----------------------------------------------------------------------------------------------------------
+
+10. What is SQL Tuning? When we do SQL tuning ?
+
+=>	📌 SQL tuning means fixing slow SQL queries so they run faster and use less resources (CPU, memory, I/O).
+	
+	🛠️ What are we tuning in a query?
+
+	📌 Reduce execution time
+	📌 Lower CPU & I/O usage
+	📌Avoid full table scans
+	📌Use indexes properly
+	📌Improve query efficiency
+
+	 🛠️ When Do We Do SQL Tuning?
+
+	 📌 Query is taking too long to execute.
+	 📌 High CPU or disk usage 
+	 📌 Application slows down due to DB
+	 📌 New indexes added or schema changed
+
+----------------------------------------------------------------------------------------------
+
+11. What is Defragmentation ?
+
+=>	📌 Cleaning up the database storage so that, space is used more efficiently and data is stored continuously.
+
+	🎯 Why Do Fragmentation Happen?
+
+	📌 When rows are inserted, updated, or deleted frequently
+	📌 Oracle may leave gaps inside data blocks
+	📌 Over time, tables and indexes get fragmented
+	📌 This leads to wasted space and slower performance
+
+	⚡ Purpose of Defragmentation
+
+	📌 Free up unused space	      
+	📌 Improve query performance
+	📌 Data is stored more compactly, so less I/O
+	📌 Makes tablespaces smaller or reusable
+
+--------------------------------------------------------------------------------------------
+
+12. What is INDEX used for as basis of performance Tuning ?
+
+	=>	📌 INDEX is mainly used for search/sorting data into the database in very fast, especially for large table. so, query performance can improve.
+
+	Mainly use for searching unique value.
+
+	👉 Creating INDEX -- CREATE INDEX index_name ON table_name (column_name);
+
+--------------------------------------------------------------------------------------------
+
+13. How get to know is INDEX being used or not ?
+	=>	📌 SQL> set autotrace on
+
+--------------------------------------------------------------------------------------------
+
+14. How to find out how many INDEXs is being used of a table ?
+	=> 📌 dba_indexes;
+----------------------------------------------------------------------------------------------------------
+15. How many types of INDEX in broder sense ?
+
+	=> 📌 INDEX are 2 types ->
+
+	 i. B-Tree index (By default)
+	 ii. Bitmap Index
+-------------------------------------------------------------------------------------------
+
+16. Create a new table and create an INDEX on that table's column ?
+
+	=> SQL> create table test_index1 (id number(2),name varchar(5));
+		SQL> create index testindex1_id_indx on test_index1(id);
+		SQL> select OWNER,INDEX_NAME,TABLE_NAME, INDEX_TYPE from dba_indexes where TABLE_NAME='TEST_INDEX1';
+
+-----------------------------------------------------------------------------------------------
+
+16. Diffrence between BTree index & Bitmap Index ?
+
+	=> 📌 BTree index :  whichever column has most High-cardinality (unique values) values that column fit for BTree index or default index.
+
+	 	📌 BiTmap index : whichever column has less-cardinality (Duplicate values) values that column fit for BiTmap index. ()
+-----------------------------------------------------------------------------------------------
+
+13. What is INDEX Rebuilt ? Purpose of use it ?
+
+=> 	📌 Index Rebuilding means re-structured indexs which got fragmented. 
+			so performance improves better.
+
+🗄️ Database Me Problem Kya Hoti Hai?
+
+Jab table me:
+
+	Bahut saare INSERT
+
+	Bahut saare UPDATE
+
+	Bahut saare DELETE
+
+	hote hain, to index me:
+
+	Empty blocks ban jate hain
+
+	Fragmentation ho jata hai
+
+	Logical order disturb ho sakta hai
+
+	Index size unnecessary bada ho sakta hai
+
+	Isse performance thoda slow ho sakta hai.
+
+🔧 INDEX REBUILD Command --- 'ALTER INDEX index_name REBUILD;
+
+	⚡ Why Do We Rebuild Indexes ::
+
+	📌 Improve query speed = faster SQL execution!
+	📌 Corruption issues	- Rare case: if an index is corrupted, rebuilding it fixes the issue.
+	📌 Fragmentation	- After many inserts/deletes, the index has empty spaces (holes) inside. 
+
+----------------------------------------------------------------------------------------------
+
+14. What is 'SQL Profile'?
+
+=>	📌 A SQL Profile is like "extra hints" Oracle adds internally to help one specific SQL query to run faster.
+
+	📌 It doesn’t change the query itself, but it gives Oracle better ideas about:
+
+		- How many rows the query might return
+
+		- Which indexes or paths are better
+
+		- How expensive (costly) the operations will be
+
+	🧠 Real-World Example -
+
+	📌 Without SQL Profile, Oracle may choose a bad path.
+	📌 With SQL Profile, Oracle chooses a smarter, faster path.
+
+------------------------------------------------------------------------------------------------
+
+
+16. ASH report steps ?
+
+=>	sqlplus / as sysdba
+
+-- then inside SQL prompt
+@$ORACLE_HOME/rdbms/admin/ashrpt.sql
+
+-- Example prompts:
+Specify the Report Type (html/text): html
+Specify the begin time: -30  (means last 30 mins)
+Specify the end time: now
+Specify the report name: ash_report_testdb.html
+
+-------------------------------------------------------------------------------------------
+
+17. AWR report steps ?
+
+=>	@$ORACLE_HOME/rdbms/admin/awrrpt.sql
+	Step 3: Answer these prompts:
+
+Format (html/text) -
+
+Database ID (auto-filled normally) -
+
+Instance Number (auto-filled if single instance) -
+
+Begin Snapshot ID (choose snapshot number) -
+
+End Snapshot ID (choose snapshot number) -
+
+Report Name (give a name, like awr_report_prod_27APR.html) -
+
+-------------------------------------------------------------------------------------------
+
+18. ADDM report steps ?
+
+=>	@$ORACLE_HOME/rdbms/admin/addmrpt.sql
+
+
+Database ID (auto-filled)
+
+Instance Number -
+
+Begin Snapshot ID -
+ 
+End Snapshot ID -
+
+Report Name (like addm_report_prod_27APR.html) -
+
+-------------------------------------------------------------------------------------------
+
+19. OIM (Oracle Identity Manager) :
+
+=> OIM (Oracle Identity Manager) is a powerful identity management tool used to manage users, roles, entitlements, and access control across enterprise systems. It is part of Oracle’s Identity Governance suite.
+
+Manage user accounts across systems (e.g., Active Directory, databases, enterprise apps).
+
+
+💡 Use Cases:
+-----------------
+A new employee joins → OIM creates AD account, mailbox, database access.
+
+A user requests access to Salesforce → Approval flow runs → Access is provisioned.
+
+User is terminated → All access is automatically revoked.
+
+Admin runs quarterly access review → Managers review and revoke unnecessary rights.
+
+--------------------------------------------------------------------------------------
+
+20. Row Level Lock ?
+
+=> ✅ Kab lagta hai -
+	👉 INSERT, UPDATE, DELETE
+
+	✅ UPDATE emp SET salary = 8000 WHERE emp_id = 101;
+	👉 Is case mein:
+
+	Sirf emp_id = 101 wali row lock hogi
+
+	Baaki rows dusre users access kar sakte hain
+--------------------------------------------------------------------------------------
+
+21. Exclusive Lock :
+
+=>	👉 Exclusive lock ka matlab hota hai resource par full control
+Dusra user us data ko modify nahi kar sakta.
+
+	Session 1:
+
+	UPDATE emp SET salary = 9000 WHERE emp_id = 101;
+
+
+	Session 2:
+
+	UPDATE emp SET salary = 10000 WHERE emp_id = 101;
+
+
+	👉 Session 2 wait karega jab tak Session 1 commit/rollback nahi karta.
+--------------------------------------------------------------------------------------
+
+22. Deadlock :
+
+=>	👉 Deadlock tab hota hai jab do ya zyada sessions ek dusre ka lock hold kar lete hain aur wait karte rehte hain.
+
+	Session 1:
+UPDATE emp SET salary = 5000 WHERE emp_id = 101;
+
+Session 2:
+UPDATE emp SET salary = 6000 WHERE emp_id = 102;
+
+
+Ab:
+
+Session 1 tries:
+
+UPDATE emp SET salary = 7000 WHERE emp_id = 102;
+
+
+Session 2 tries:
+
+UPDATE emp SET salary = 8000 WHERE emp_id = 101;
+
+
+👉 Result:
+
+Session 1 → Session 2 ka lock wait karega
+
+Session 2 → Session 1 ka lock wait karega
+
+💥 Deadlock ho gaya
+--------------------------------------------------------------------------------------
+
+23. If SQL query running slow how to resolve tell me the steps ?
+
+=> mainly 3 reasons for slowness any query.
+👉 That query goes for Hard Parsing
+👉 Index is missing of that query
+👉 Stat Gather doesn't apply on that query
+
+-- We do 'SQL tuning' to identify the reason. We run default package for tuning advisory.
+-- koi bhi tuning ko resolve karne ke liye we have to check 'Load' on the database.
+-- Then we need to figureout which perticuler SQL Query running slow. 
+-- We must genarate 'ASH' report. Because, in ASH report we'll get - top query by CPU use,
+by I/O use, by elapse time.
+--------------------------------------------------------------------------------------

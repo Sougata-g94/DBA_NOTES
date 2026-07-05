@@ -1,0 +1,6 @@
+1. agar RMAN & EXPDP-EMPDP ek saath chal raha hain jiske waja se performance slow ho raha hain then how to fix it ?
+2. how to roll back of patch ?
+3. diffrence between upgradation and migration ?
+4. steps of upgradation ?
+5. after applying patch we do datapatch verbose, what is the purpose of datapatch verbose ?
+6. we have 10 tbales of HR schema, i want only i table bcakup then whst parameter we should use ? (include,exclude)

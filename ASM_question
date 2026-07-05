@@ -1,0 +1,99 @@
+1. Check ASM up and running ?
+=> grid]$ ps -ef | grep pmon
+---------------------------------------------------------------------
+
+2. what should we give SID name in ASM ? 
+=> whatever the name of database or whichever is run in 'ps -ef | grep pmon' that's called SID.
+
+example ::
+
+[grid@localhost ~]$ . oraenv
+ORACLE_SID = [grid] ? +ASM
+The Oracle base has been set to /u01/app/grid
+-------------------------------------------------------------------------
+
+3. how to find alertlog in ASM ?
+=> find /u01 -name alert*.log
+
+## After getting the alert log file, write below command -
+
+[grid@localhost grid]$ tail -100f /u01/app/grid/diag/asm/+asm/+ASM/trace/alert_+ASM.log
+------------------------------------------------------------------------------------------
+
+4. What is diffrent between 'Enterprise edition' and 'Standerd Edition' while installing oracle s/w ?
+
+=> In 'Enterprise edition' many features are enabled from oracle.
+	  'Standerd Edition' there are lots of limitation are there. Maximumm organisation uses 'Enterprise edition' software. 	 
+---------------------------------------------------------------------------------------------
+
+5. How to see all resources in ASM that are online or offline ?
+=> crsctl stat res -t
+---------------------------------------------------------------
+
+6. How to check what are the database config in ASM ?
+=> srvctl config database
+=> prod or orcl
+---------------------------------------------------------------
+
+7. To see what are the configaration on this database ?
+=> srvctl config database -d prod
+---------------------------------------------------------------
+
+8. How to check database running or not ?
+=> srvctl status database -d orcl
+---------------------------------------------------------------
+
+9. How to start database in ASM ?
+=> srvctl start database -d orcl
+---------------------------------------------------------------
+
+6. Another way to start the enviroment ?
+=> crsctl start has
+--------------------------------------------------------------
+
+7. Another way To check ASM up or not ?
+=> ps -ef | grep d.bin
+------------------------------------------------------------------
+8. Dynamic view for ASM related files n all ?
+=> v$asm_diskgroups;
+----------------------------------------------------
+9. To add a Disk Group or create Disk Group ?
+=> ./asmca
+----------------------------------------------------
+10. Asm utility tool ?
+=> asmcmd
+----------------------------------------------------
+11. To see list of disk group where we can see all the details of disk group ?
+=> asmcmd> lsdg
+----------------------------------------------------
+12. How to know/check our ASM processes up and running or not ?
+=> ps -ef | grep pmon
+----------------------------------------------------
+13. How to know / check whether ASM is configured to our database or not ? OR
+    How to check the status that our database (which is 'PROD') is allign with the ASM or not ?
+
+=> using the command - (crsctl stat res -t). - using this commnand.
+-- we've to switch to grid user first.
+ step1 :  Switch to grid user - (su grid)
+ step2 : Set the enviroment - (. oraenv) and ORACLE_SID will be the - (+ASM)
+ step3 : (crsctl stat res -t)
+----------------------------------------------------
+14. How to check if the srvctl is configuard with our database or not ?
+=> [oracle@localhost ~]$ srvctl config database
+[output : PROD]
+----------------------------------------------------
+15. What are the configuration that has been done to the database name is 'PROD' ?
+=> [oracle@localhost ~]$ srvctl config database -d prod
+----------------------------------------------------
+16. How to check database status (if ASM is configured with the database) ?
+=> [oracle@localhost ~]$ srvctl status database -d prod
+----------------------------------------------------
+17. Start database command ?
+=> [oracle@localhost ~]$ srvctl start database -d prod
+----------------------------------------------------
+18. How we can check the Disk group ? (disk group avalable or not)
+=> [grid@localhost oracle ~]$ asmcmd
+ASMCMD> lsdg
+
+### --------------- Mounting and Dis-mounting the Disk groups ------------------------ :-
+19. 

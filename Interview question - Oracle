@@ -1,0 +1,269 @@
+1. Control file and datafile location :
+👉 /u01/app/oracle/oradata/PROD  or  $oracle_base/oradata/PROD
+👉 /u01/app/oracle/oradata/your_db_name/system01.dbf
+------------------------------------------------------------
+2. Pfile and spfile location :
+👉 /u01/app/oracle/product/19.0.0/dbhome_1/dbs   or   $oracle_home/dbs
+------------------------------------------------------------
+3. Listner and tns location :
+👉 /u01/app/oracle/product/19.0.0/dbhome_1/network/admin   or $oracle_home/network/admin
+------------------------------------------------------------
+4. dba_sys_privs - (system privilege check for user)
+------------------------------------------------------------
+5. dba_tab_privs - (object privilege check for which table)
+------------------------------------------------------------
+6. How to check maximum number of datafiles allowed in the database ? 
+👉 -- SHOW PARAMETER db_files; 
+------------------------------------------------------------
+7. maximumm how many data file we can add ? -- 
+👉 -- 200 
+------------------------------------------------------------
+8. Maximum database file (datafile) size kitna hota hai?
+👉 -- 128 GB
+------------------------------------------------------------
+9. Default data block size kitna hota hai?
+👉 -- 8kb
+------------------------------------------------------------
+10. Archive log ka default size ?
+👉 -- 8GB
+------------------------------------------------------------
+11. How do i check how many objects and types of a database ?
+👉 -- desc dba_objects;
+------------------------------------------------------------
+
+12. What is 'list of database incarnations' ?
+
+=> it means a new lifeline of the database. When we do 'RESETLOGS' a new incarnation has
+    started. 
+
+👉-- RMAN> LIST INCARNATION; --- using this command we see a list of incarnation history.
+
+👉-- Whenever we do RESETLOGS a new incarnation will start of the database. 
+
+# Output:
+List of Database Incarnations
+
+DB Key  Inc Key DB Name  DB ID      STATUS
+------- ------- -------- ---------- -------
+1       1       ORCL     1234567890 PARENT
+2       2       ORCL     1234567890 PARENT  
+3       3       ORCL     1234567890 CURRENT
+
+👉 CURRENT  = Abhi wali
+👉 PARENT   = Purani
+
+✅ If we want to reset old incarnation - RMAN> RESET DATABASE TO INCARNATION 2;
+
+------------------------------------------------------------
+11. Grant option and admin option diffrence ?
+
+=> ✅ With Grant option :
+
+Kisi user ko 'Object Privilege' dete waqt "WITH GRANT OPTION" do — toh wo user aage doosron ko bhi wahi privilege de sakta hai!
+
+** IF DBA REVOKE FROM 'RAMESH', RAMESH AND OTHERS PRIVILAGE GONE**
+
+👉 Example:
+
+DBA → Ramesh ko diya:
+GRANT SELECT ON employees TO ramesh WITH GRANT OPTION;
+          │
+          ▼
+Ramesh → Suresh ko de sakta hai:
+GRANT SELECT ON employees TO suresh;
+
+
+=> ✅ WITH ADMIN OPTION :
+
+Kisi user ko 'System Privilege' dete waqt "WITH ADMIN OPTION" do — toh wo user aage doosron ko bhi wahi privilege de sakta hai!
+
+** IF DBA REVOKE FROM 'RAMESH', RAMESH NO LONGER ACCESS BUT OTHERS CAN DO **
+------------------------------------------------------------
+
+12. What is System Privilege and Object Privilege?
+
+=> ✅ System Privileges -- 
+
+        👉 CREATE SESSION
+        👉 CREATE TABLE
+        👉 CREATE VIEW
+        👉 CREATE USER
+        👉 ALTER SYSTEM
+        👉 DROP ANY TABLE
+
+        🔹 Example -- GRANT CREATE TABLE TO scott;
+
+    ✅ Object Privileges -- 
+
+        👉 SELECT
+        👉 INSERT
+        👉 UPDATE
+        👉 DELETE
+        👉 EXECUTE
+
+    🔹 Example -- GRANT SELECT, INSERT ON hr.employees TO scott;
+------------------------------------------------------------
+
+13. ✅ Hard Parsing:
+
+👉 If the statement does not exist (cache miss), Oracle parses the SQL statement, generating an execution plan, and then stores this information in the Library Cache for future use (known as hard parsing).
+------------------------------------------------------------
+14. ✅ THE PFILE
+
+👉 we were using a text file called the PFILE (parameter file) for setting the database initialization parameters. This PFILE is read at instance startup time to get specific instance characteristics. The PFILE is text based, and can be edited in an editor like vi on UNIX or Notepad on Windows. Any changes that were made in PFILE would only take effect when the database is restarted.
+
+15. ✅ THE SPFILE
+
+👉 (server parameter file) - SPFILE is a binary file that contains the same information as the old PFILE. SPFILE permits dynamic changes without requiring you to restart that instance.
+------------------------------------------------------------
+16. ROLE :
+
+=> Grouping of Privileges:
+
+👉 Roles allow you to group multiple privileges together. Instead of granting individual privileges to each user, you can grant a role that contains all the necessary privileges.
+
+👉 Example / why we use:
+Instead of granting individual privileges like SELECT, INSERT, UPDATE, and DELETE on multiple tables to a user, you can create a role that includes these privileges and then grant the role to the user.
+------------------------------------------------------------
+17. PROFILE:
+
+👉 Control Resource Usage:
+
+Profiles allow administrators to set limits on how many amount of system resources a user can consume. This prevents any single user from monopolizing database resources, which can impact the performance of other users and applications.
+
+✅ TYPES Of PROFILE -- 2 Types.
+
+👉 Password Profile : User ke password-related policies control karta hai.
+
+PASSWORD_LIFE_TIME
+PASSWORD_GRACE_TIME -- after getting expired password how long user can login with that pass.
+PASSWORD_REUSE_TIME
+PASSWORD_REUSE_MAX
+FAILED_LOGIN_ATTEMPTS
+PASSWORD_LOCK_TIME
+PASSWORD_VERIFY_FUNCTION
+
+✅ Purpose ::
+
+👉 Password expiry
+👉 Account lock
+👉 Password complexity
+👉 Password reuse restriction
+
+
+👉 Resource Profile : User kitne database resources use kar sakta hai, ye control karta hai.
+
+SESSIONS_PER_USER
+CPU_PER_SESSION
+CPU_PER_CALL
+CONNECT_TIME
+IDLE_TIME
+LOGICAL_READS_PER_SESSION
+LOGICAL_READS_PER_CALL
+PRIVATE_SGA
+
+✅ Purpose :: 
+
+👉 CPU limit
+👉 Session limit
+👉 Idle time limit
+👉 Connect time limit
+------------------------------------------------------------
+
+18. 1. User and Schema Diffrences :
+
+👉 User:  It is used for authentication and authorization.
+
+👉 Schema:  A schema is a collection of database objects that belong to a single user. These objects include tables, views, indexes, sequences, procedures, functions, and packages.
+------------------------------------------------------------
+
+
+19. AWS components ?
+=>
+------------------------------------------------------------
+
+20. Upgradation and migradation highlevel steps ?
+=>
+------------------------------------------------------------
+
+21. Pfile mejor components ?
+=> db_name,memory_target, control_files
+------------------------------------------------------------
+
+22. suppose, mere pass pfile,spfile,backup,dictionaries kuch bhi nei hain so how we can at least startup database ?
+
+=> create manual pfile. go to alertlog - then find pfile parameters (db_home) - copy all parameter and past into the pfile.
+------------------------------------------------------------
+
+23. What is FLASHBACK ? Types of FLASHBACK ?
+
+👉 FLASHBACK is a oracle feature that helps to recover database object or database any past
+point-in-time.
+
+✅ Flashback ka Purpose : 
+    
+    Suppose mistakenly we drop/delete any database object, if Flashback is enable then
+    we can recover that object.
+
+✅ Types of Flashback : 3 Types. Flashback Table, Flashback Database, Flashback Transaction
+
+
+👉 Flashback Table : table ko purane state me le jana. 
+    -- FLASHBACK TABLE emp TO TIMESTAMP (SYSDATE - 1/24);
+
+👉 Flashback Database : Puri database ko past time par le jana.
+    -- FLASHBACK DATABASE TO TIMESTAMP TO_TIMESTAMP('2026-06-17 10:00:00','YYYY-MM-DD HH24:MI:SS');
+
+👉 Flashback Transaction : To see Transaction history. Kis transaction ne kya changes kiye,
+                            dekhne ke liye.
+    -- SELECT * FROM FLASHBACK_TRANSACTION_QUERY;
+-----------------------------------------------------------------------------
+
+24. How check FLASHBACK STATUS ?
+
+👉 SELECT flashback_on from v$database;
+-----------------------------------------------------------------------------
+
+25. How to enable FLASHBACK ?
+
+👉 Bring the Database to mount state (SHUTDOWN IMMEDIATE; -> STARTUP MOUNT;) 
+👉 ALTER DATABASE FLASHBACK ON;
+👉 ALTER DATABASE OPEN;
+-----------------------------------------------------------------------------
+
+26. FLASHBACK & RMAN Diffrence ?
+
+👉 Flashback is fast recover - RMAN is slow recover
+👉 Flashback uses logs       - RMAN uses backupset
+👉 Restore not needed        - RMAN restore is needed.
+-----------------------------------------------------------------------------
+
+27. CRON tab 5 start reasons ?
+
+👉 1st Star = Minute
+-- Har hour ke 0 minute par run hoga.
+-- Example: 01:00, 02:00
+
+👉 2nd Star = Hour (0 2 * * *)
+-- Matlab: Roz 2:00 AM par run hoga.
+ 
+👉 3rd Star = Day of Month (0 2 15 * *)
+-- Har month ki 15th date ko 2:00 AM par run hoga.
+
+👉 4th Star = Month (0 2 15 6 *)
+-- Matlab: Har saal 15 June ko 2:00 AM par run hoga.
+
+👉 5th Star = Day of Week (0 2 * * 0)
+-- Har Sunday ko 2:00 AM par run hoga.
+-- Day of week mapping:
+
+0 = Sunday
+1 = Monday
+2 = Tuesday
+3 = Wednesday
+4 = Thursday
+5 = Friday
+6 = Saturday
+7 = Sunday
+-----------------------------------------------------------------------------
+

@@ -1,0 +1,11 @@
+1. what is port ?
+2. when dbwn write db buffer to disk -- ckpt happend,
+3. scop both
+4. in mount dba view working or not ?
+---> 
+5. restore parameter file from backup ?
+---> STARTUP NOMOUNT;
+RESTORE SPFILE FROM AUTOBACKUP;
+SHUTDOWN IMMEDIATE;
+STARTUP;
+                                

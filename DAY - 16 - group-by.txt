@@ -1,0 +1,50 @@
+DAY - 16
+======================= GROUP BY ==================
+1. To see how many employees are working to each department (Department wise) - (that case we can use 'Group by' function).
+=> select deptno,count(*) from emp_sougata group by deptno; /
+    DEPTNO   COUNT(*)
+---------- ----------
+	30	    6
+	10	    4
+	20	    5
+
+=> select sal,count(*),avg(sal) from emp_sougata group by sal order by sal; [get the avg salary]
+       SAL   COUNT(*)	AVG(SAL)
+---------- ---------- ----------
+       800	    1	     800
+       950	    1	     950
+      1100	    1	    1100
+      1250	    2	    1250
+      1300	    1	    1300
+      1500	    1	    1500
+      1600	    1	    1600
+      1999	    1	    1999
+      2450	    1	    2450
+      2850	    1	    2850
+      2975	    1	    2975
+      3000	    2	    3000
+      5000	    1	    5000
+
+13 rows selected.
+------------------------------------------------------------------- xxxx -------------------------------------------------------------------
+2. I want all the department except depno 10.
+=> select deptno,count(*) from emp_sougata where deptno !=10 group by deptno order by deptno;
+    DEPTNO   COUNT(*)
+---------- ----------
+	20	    5
+	30	    6
+------------------------------------------------------------------- xxxx --------------------------------------------------------------------
+3. I want to display the NULL value also.
+=> select deptno,count(*) from emp_sougata where deptno !=10 or deptno is null group by deptno order by deptno;
+    DEPTNO   COUNT(*)
+---------- ----------
+	20	    5
+	30	    6
+------------------------------------------------------------------- xxxx ---------------------------------------------------------------------
+4. Maximumm salary of each department.
+=> select deptno,count(*),max(sal) from emp_sougata group by deptno;
+    DEPTNO   COUNT(*)	MAX(SAL)
+---------- ---------- ----------
+	30	    6	    2850
+	10	    4	    5000
+	20	    5	    3000

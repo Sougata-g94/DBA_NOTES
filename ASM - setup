@@ -1,0 +1,264 @@
+Connect to OEL 7.9 server via putty and install the below packages
+=========================================== ASM =========================================================
+
+Oracle 19c Installation on Linux with ASM in Standalone database
+Installation oracle Linux 7.9 (OLE7.9.iso)
+
+** Steps are given below : **
+ 
+1 Prerequisites
+2 Configure Oracle ASM
+3 Install Grid Software
+4 Configure ASM Diskgroups
+5 Install Oracle Software
+6 DBCA Create Database on ASM
+
+==========================================================================================================
+
+✅## Step 1 - Prerequisites
+Connect to OEL 7.9 server via putty and install the below packages
+
+##Root
+yum install -y oracle-database-preinstall-19c --> (this is a prerequsite to make sure when we do oracle db 
+                                                   it will compatible to oracle linux.)
+yum -y install oracleasm*
+yum -y install kmod-oracleasm*
+
+
+##-Add below OS groups:
+
+##Root
+groupadd -g 54327 asmdba
+groupadd -g 54328 asmoper
+groupadd -g 54329 asmadmin
+
+
+##Add asmdba as secondary group to Oracle user:
+
+usermod -a -G asmdba oracle
+
+
+##Create Grid User:
+
+useradd -u 54331 -g oinstall -G dba,asmdba,asmoper,asmadmin,racdba grid
+
+
+##Change the password for Oracle and Grid user:
+
+passwd oracle
+passwd grid
+
+##Create the Directories for Oracle Database installation:
+
+mkdir -p /u01/app/oracle/product/19/db
+chown -R oracle:oinstall /u01
+
+##Create the Directories for Oracle Grid installation:
+
+mkdir -p /u01/app/grid/product/19/grid
+chown -R grid:oinstall /u01/app/grid
+chmod -R 775 /u01
+
+## software to placed and unzipped at dedicated location of grid and oracle.
+
+***************************************************************************************
+
+✅## Step 2 - Configure Oracle ASM
+
+##Let us configure Oracle ASM with the below command :
+
+👉 oracleasm configure -i
+
+Default user to own the driver interface []: grid
+Default group to own the driver interface []: oinstall
+Start Oracle ASM library driver on boot (y/n) [n]: y
+Scan for Oracle ASM disks on boot (y/n): y
+Writing Oracle ASM library driver configuration: done
+
+
+
+## Now, all the changes we made on the 'Kernal' / 'server level', so to reflect all these changes we've to do restart. To restart the changes command is below -
+
+👉 [root@localhost /]# oracleasm init
+
+***************************************************************************************
+
+
+✅## Step 3 - Install Grid Software with disk addition :
+
+👉 df -h
+👉 init 0 --> to make server down to adding a disk :
+
+-- Create disks from Virtual Mechine settings. (suppose 30gb)
+********************************************************************************************
+✅## Step - 4 : disk partitioning
+ 
+👉 fdisk -l ----> (all the disk lists thoes available on the server.)
+👉 fdisk /dev/sdb
+
+         Command (m for help): n
+         Partition type:
+           p   primary (0 primary, 0 extended, 4 free)
+           e   extended
+        Select (default p): 
+        Using default response p
+        Partition number (1-4, default 1): 
+        First sector (2048-56623103, default 2048): 
+        Using default value 2048
+        Last sector, +sectors or +size{K,M,G} (2048-56623103, default 56623103): +15G {'Enter the disk size'}.
+        Partition 1 of type Linux and of size 13 GiB is set
+
+
+ 👉 oracleasm listdisks
+ 👉 oracleasm createdisk DATA /dev/sdb1
+ 👉 oracleasm createdisk FRA /dev/sdb2
+ 👉 oracleasm listdisks
+        DATA
+        FRA
+
+**** DATA - disk group :: 'DATA' disk group will contain all the physical files of the database and controlfile, datafile and redolog files.
+
+*** FRA - disk group :: 'FRA' will contain all the backup pices as well as archive log files.
+
+## Check the grid software location on sharefolder :
+
+ df -h
+ cd /media/sf_newsharefolder
+
+        [root@localhost sf_newsharefolder]# ll
+        total 10547692
+        -rwxrwx---. 1 root vboxsf     180224 Jul 10 18:16 exp_bckup1.dmp
+        -rwxrwx---. 1 root vboxsf 3059705302 Jan 22 22:45 LINUX.X64_193000_db_home.zip
+        -rwxrwx---. 1 root vboxsf 2889184573 Jul 12 16:30 LINUX.X64_193000_grid_home.zip
+        -rwxrwx---. 1 root vboxsf 4851761152 Jan 18 09:22 OracleLinux-R7-U9-Server-x86_64-dvd.iso
+
+****************************************************************************************
+
+✅ ## step - 5 : unzip the zip file in grit directory and run gridSetup.sh. to do so grid software installed successfully.
+
+## Unzip the software :
+
+👉 unzip LINUX.X64_193000_grid_home.zip -d /u01/app/grid/product/19/grid
+
+        ** (if size is full on vm machine, how to check -)**
+        [root@localhost sf_downloads]# cd /u01/app
+        [root@localhost app]# ls -ltrh
+        [root@localhost app]# du -sh *
+
+ ## After Installation complete of grid software, check the location  :
+
+👉 cd /u01/app/grid/product/19/grid
+👉 ll
+
+## Now on grid location all newly installed files are root privilages, since it's a grid binaries so we've
+to change it's owner as a grid :
+
+👉chown grid:oinstall *
+
+## Switching to grid user :
+
+👉 su - grid
+👉 whoami
+👉 cd /u01/app/grid/product/19/grid
+👉 ll
+
+## Now, there is a file 'gridSetup.sh' for install the grid software. like 'runInstaller' is for oracle
+software installation. 
+
+👉 [grid@localhost grid]$ exit
+👉 [root@localhost grid]# chmod -R 755 /u01
+👉 [root@localhost grid]# init 6
+
+## After restart you can login to grid user :
+
+cd /u01/app
+ll
+cd grid/
+ll
+cd product/
+ll
+cd 19
+ll
+cd grid/
+ll
+./gridSetup.sh
+
+**************************************************************************************
+
+## Step 6 - Disk group creation. we've already created data disk group :
+
+[grid@localhost ~]$ . oraenv
+ORACLE_SID = [grid] ? +ASM
+The Oracle base has been set to /u01/app/grid
+[grid@localhost ~]$ asmcmd
+ASMCMD> lsdg
+
+## To see data disk group :
+
+[grid@localhost ~]$ asmcmd
+ASMCMD> lsdg
+
+## Disk group addition/deletion :
+'./asmca' command used for disk group addition/deletion. Same as like 'dbca'. 
+
+[grid@localhost ~]$ cd /u01/app/grid/product/19/grid/bin
+[grid@localhost bin]$ ls -ltsh asm*
+[grid@localhost bin]$ ./asmca
+
+## After creating another group called 'FRA', Come again to the 'asmcmd'. Here you can see 'FRA' group added.
+
+[grid@localhost bin]$ asmcmd
+ASMCMD> lsdg
+State    Type    Rebal  Sector  Logical_Sector  Block       AU  Total_MB  Free_MB  Req_mir_free_MB  Usable_file_MB  Offline_disks  Voting_files  Name
+MOUNTED  EXTERN  N         512             512   4096  4194304     13312    13212                0           13212              0             N  DATA/
+MOUNTED  EXTERN  N         512             512   4096  4194304     14332    14244                0           14244              0             N  FRA/
+ASMCMD> 
+
+***************************************************************************************
+
+Now, install DB_home software,... Here are the steps we follow -
+
+Step 1 - go to root user :
+
+[grid@localhost bin]$ su root
+[root@localhost bin]# cd /
+[root@localhost /]# ll
+
+## Here you see the all the directories :
+
+[root@localhost /]# cd media
+[root@localhost media]# ll
+[root@localhost media]# cd sf_newsharefolder
+[root@localhost sf_newsharefolder]# ll
+
+## Here is the software -  'LINUX.X64_193000_db_home.zip'
+
+## unzip that software :
+
+[root@localhost sf_newsharefolder]# unzip LINUX.X64_193000_db_home.zip -d /u01/app/oracle/product/19/db/
+
+## Once completing installation then we'll change the ownership :
+
+*******************************************************************************************
+
+[grid@localhost grid]$ cat /etc/oraInst.loc 
+inventory_loc=/u01/app/grid
+inst_group=oinstall
+
+## Switch to root user :
+
+[grid@localhost grid]$ su root
+[root@localhost grid]# vi /etc/oraInst.loc
+
+## Change inventory location - 'inventory_loc=/u01/app/grid' to 'inventory_loc=/u01/app/oraInventory'
+       inventory_loc=/u01/app/oraInventory
+       inst_group=oinstall
+
+## Then run the GUI tool for instaaling software..
+
+=================================================================
+
+[Thread-100] [ 2024-07-14 23:57:42.244 IST ] [StreamReader.run:66]  OUTPUT> DIA-49802: missing read, write, or execute permission on specified ADR home directory [/u01/app/grid/diag/crs/localhost]
+[Thread-100] [ 2024-07-14 23:57:42.244 IST ] [StreamReader.run:66]  OUTPUT>DIA-49801: actual permissions [rwxr-xr-x], expected minimum permissions [rwxrwx---] for effective user [oracle]
+[Thread-100] [ 2024-07-14 23:57:42.244 IST ] [StreamReader.run:66]  OUTPUT>DIA-48188: user missing read, write, or exec permission on specified directory
+[Thread-100] [ 2024-07-14 23:57:42.244 IST ] [StreamReader.run:66]  OUTPUT>Linux-x86_64 Error: 13: Permission denied

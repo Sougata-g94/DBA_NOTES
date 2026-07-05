@@ -1,0 +1,160 @@
+RMAN> backup incremental level 1 cumulative database;
+=================================== Partioning ============================== ASM =====
+
+[root@localhost ~]# fdisk -l
+
+Disk /dev/sda: 96.6 GB, 96636764160 bytes, 188743680 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk label type: dos
+Disk identifier: 0x000218e3
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1   *        2048     2099199     1048576   83  Linux
+/dev/sda2         2099200   188743679    93322240   8e  Linux LVM
+
+Disk /dev/sdb: 29.0 GB, 28991029248 bytes, 56623104 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+
+
+Disk /dev/mapper/ol-root: 53.7 GB, 53687091200 bytes, 104857600 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+
+
+Disk /dev/mapper/ol-swap: 3758 MB, 3758096384 bytes, 7340032 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+
+
+Disk /dev/mapper/ol-home: 38.1 GB, 38109446144 bytes, 74432512 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+
+[root@localhost ~]# fdisk s /dev/sdb
+Usage:
+ fdisk [options] <disk>    change partition table
+ fdisk [options] -l <disk> list partition table(s)
+ fdisk -s <partition>      give partition size(s) in blocks
+
+Options:
+ -b <size>             sector size (512, 1024, 2048 or 4096)
+ -c[=<mode>]           compatible mode: 'dos' or 'nondos' (default)
+ -h                    print this help text
+ -u[=<unit>]           display units: 'cylinders' or 'sectors' (default)
+ -v                    print program version
+ -C <number>           specify the number of cylinders
+ -H <number>           specify the number of heads
+ -S <number>           specify the number of sectors per track
+
+[root@localhost ~]# fdisk /dev/sdb
+Welcome to fdisk (util-linux 2.23.2).
+
+Changes will remain in memory only, until you decide to write them.
+Be careful before using the write command.
+
+Device does not contain a recognized partition table
+Building a new DOS disklabel with disk identifier 0x749ce5df.
+
+Command (m for help): m
+Command action
+   a   toggle a bootable flag
+   b   edit bsd disklabel
+   c   toggle the dos compatibility flag
+   d   delete a partition
+   g   create a new empty GPT partition table
+   G   create an IRIX (SGI) partition table
+   l   list known partition types
+   m   print this menu
+   n   add a new partition
+   o   create a new empty DOS partition table
+   p   print the partition table
+   q   quit without saving changes
+   s   create a new empty Sun disklabel
+   t   change a partition's system id
+   u   change display/entry units
+   v   verify the partition table
+   w   write table to disk and exit
+   x   extra functionality (experts only)
+
+Command (m for help): n
+Partition type:
+   p   primary (0 primary, 0 extended, 4 free)
+   e   extended
+Select (default p): 
+Using default response p
+Partition number (1-4, default 1): 
+First sector (2048-56623103, default 2048): 
+Using default value 2048
+Last sector, +sectors or +size{K,M,G} (2048-56623103, default 56623103): +13G
+Partition 1 of type Linux and of size 13 GiB is set
+
+Command (m for help): n
+Partition type:
+   p   primary (1 primary, 0 extended, 3 free)
+   e   extended
+Select (default p): 
+Using default response p
+Partition number (2-4, default 2): 
+First sector (27265024-56623103, default 27265024): 
+Using default value 27265024
+Last sector, +sectors or +size{K,M,G} (27265024-56623103, default 56623103): 
+Using default value 56623103
+Partition 2 of type Linux and of size 14 GiB is set
+
+Command (m for help): w
+The partition table has been altered!
+
+Calling ioctl() to re-read partition table.
+Syncing disks.
+[root@localhost ~]# 
+[root@localhost ~]# 
+[root@localhost ~]# fdisk -l
+
+Disk /dev/sda: 96.6 GB, 96636764160 bytes, 188743680 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk label type: dos
+Disk identifier: 0x000218e3
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1   *        2048     2099199     1048576   83  Linux
+/dev/sda2         2099200   188743679    93322240   8e  Linux LVM
+
+Disk /dev/sdb: 29.0 GB, 28991029248 bytes, 56623104 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk label type: dos
+Disk identifier: 0x749ce5df
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sdb1            2048    27265023    13631488   83  Linux
+/dev/sdb2        27265024    56623103    14679040   83  Linux
+
+Disk /dev/mapper/ol-root: 53.7 GB, 53687091200 bytes, 104857600 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+
+
+Disk /dev/mapper/ol-swap: 3758 MB, 3758096384 bytes, 7340032 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+
+
+Disk /dev/mapper/ol-home: 38.1 GB, 38109446144 bytes, 74432512 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+
+========================================================
+

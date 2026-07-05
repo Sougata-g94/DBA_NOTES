@@ -1,0 +1,334 @@
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ PHYSICAL BACKUP : RMAN ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+
+1. Step of Full RMAN RECOVERY ? (in case oracle s/w is missing, we need to install oracle s/w).
+
+	=> Set ENV 
+	-> RMAN target / 
+	-> RMAN> startup (DB will open in nomount mode) 
+	-> Restore SPFILE from '/backup_location/';  
+	-> Shutdown immediate
+	-> Startup (nomount)
+	-> Restore controlfile from '/backup_location/';
+	-> Alter database mount;
+	-> Restore database;
+	-> Recover database;
+	-> Alter database open RESETLOGS; (Reset the log sequence number for complete recovery.)
+	-> Take a fresh full backup again.
+--------------------------------------------------------------------------------------------
+
+2. Restore parameter file (spfile/pfile) from backup ?
+
+=> Set ENV
+=> Rman target / (RMAN> prompt will open even parameter file missing for recovery)
+=> DB will open in 'Nomount' mode
+=> restore spfile from '/u01/app/oracle/fast_recovery_area/prod/autobackup/2026_05_10/o1_mf_s_123abc_.bkp';
+=> shutdown immediate
+=> startup (means parameter file has now restored)
+=> restore controlfile from '/u01/app/oracle/fast_recovery_area/prod/autobackup/2026_05_10/o1_mf_s_123abc_.bkp'; 
+=> alter database mount (because we have now controlfile, so it will open in mount state)
+=> Restore database;
+=> Recover database;
+=> Alter database open RESETLOGS;
+
+------------------------------------------------------------------------------------------
+3. Take Backup when my backup location is diffrent not the default one (FRA) ?
+
+	=> Set ENV
+	-> RMAN target /
+	-> RMAN> startup (DB will open in nomount mode if control file is missing) 
+	-> Restore CONTROLfile from '/u01/app/oracle/backup_location/ol_mf_123.bkp';
+	-> Alter database mount;
+	-> catalog start with '/new_backup_location';
+	-> Restore database;
+	-> Recover database;
+	-> Alter database open RESETLOGS; (Reset the log sequence number for complete recovery.)
+--------------------------------------------------------------------------------------------
+
+4. Restore backup to a diffrent location steps ?
+
+		*(if Database is not there, then we'll go to '/etc/oratab' and create database with same name as like provide by the backup team)*
+
+	=> Set ENV
+	-> RMAN target / 
+	-> RMAN> startup (Oracle instance will startup without SPfile because RMAN has a feature 
+	                  for backup recovery case with bare minimum memory with nomount state)
+	-> Restore SPFILE from '/backup_location/';
+	-> Shutdown immediate;
+	-> Startup (nomount)
+	-> Restore controlfile from '/location/';
+	-> Alter database mount;
+	-> 	RUN {
+			SET NEWNAME FOR DATABASE TO '/u01/app/oracle/tmp_sha';
+	
+			OR
+
+			SET NEWNAME FOR DATAFILE 1 to '/u01/app/oracle/tmp_sha/system01.dbf'
+			SET NEWNAME FOR DATAFILE 2 to '/u01/app/oracle/tmp_sha/sha02.bdf'
+			SET NEWNAME FOR DATAFILE 3 to  '/u01/app/oracle/tmp_sha/sysaux01.dbf'
+			SET NEWNAME FOR DATAFILE 4  to '/u01/app/oracle/tmp_sha/undotbs01.dbf'
+			SET NEWNAME FOR DATAFILE 5  to '/u01/app/oracle/tmp_sha/sha01.dbf'
+			SET NEWNAME FOR DATAFILE 6  to '/u01/app/oracle/tmp_sha/users01.dbf'
+			SET NEWNAME FOR DATAFILE 7  to '/u01/app/oracle/tmp_sha/sha03.bdf'
+			SET NEWNAME FOR DATAFILE 8  to '/u01/app/oracle/tmp_sha/sha04.bdf'
+			SET NEWNAME FOR DATAFILE 9  to '/u01/app/oracle/tmp_sha/ism01.dbf'
+	
+			RESTORE DATABASE;
+    	SWITCH DATAFILE ALL;
+			RECOVER database;
+			ALTER DATABASE OPEN RESETLOGS;
+		}
+--------------------------------------------------------------------------------------------
+
+6. What is the backup exact start time,staus and end time view ?
+👉 desc v$rman_status;
+--------------------------------------------------------------------------------------------
+
+7. RMAN backup using script for take backup another location ?
+👉 run {
+	
+	allocate channel c1 type disk;
+	allocate channel c2 type disk;
+	backup
+	incrimental level 0
+	database
+	format '/u01/app/oracle/sha_bkup/SHA_%U';
+	release channel c1;
+	release channel c2;
+}
+---------------------------------------------------------------------------------------
+
+8. Size wise taken backup syntax ?
+👉 run {
+allocate channel c1 type disk;
+  backup
+    incremental level 0
+    maxsetsize 10G
+    database
+    format '/path/to/backup/%U';
+  release channel c1;
+}
+
+---------------------------------------------------------------------------------------
+
+9. How to restore only user.dbf datafile if someone delete this datafile ?
+
+👉	1st step - offline the users.dbf
+👉  2nd step - RESTORE DATAFILE '/u01/app/oracle/oradata/DBNAME/users.dbf';
+👉  3rd step - Recover DATAFILE
+---------------------------------------------------------------------------------------
+
+10. Control file missing how to restore ?
+
+👉 Step 1: Shutdown Database - (SHUTDOWN ABORT;)
+👉 Step 2: Start Instance in NOMOUNT - (STARTUP NOMOUNT;)
+👉 Step 3: Restore Control File - (RMAN> RESTORE CONTROLFILE FROM AUTOBACKUP;)
+👉 Step 4: Mount Database - (RMAN> ALTER DATABASE MOUNT;)
+👉 Step 5: Recover Database - (RMAN> RECOVER DATABASE;)
+👉 Step 6: Open Database - (RMAN> ALTER DATABASE OPEN;)
+---------------------------------------------------------------------------------------
+
+11. How to REFRESH Activity steps ?
+
+
+
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ Backup Question   ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+
+1. How to find archive destination ?
+	=> V$ARCHIVED_LOG (to See Actual Archive Locations)
+	=> desc V$ARCHIVE_DEST
+	=> SHOW PARAMETER log_archive_dest (Check Parameter Value)
+-----------------------------------------------------------
+2. Archive log enable or not find ?
+=> There is a view :-
+i. sql> archive log list;
+ii. SQL> desc v$database; -> select LOG_MODE,OPEN_MODE from v$database;
+-----------------------------------------------------------
+
+3. what is inside the backupset and autobackup ?
+=> Backup Set - 
+							- Data file blocks - compressed and bundled together
+							- Archived redo logs or control files
+							- Split into backup pieces (physical files that make up the set)
+
+	Autobackup (Control File Autobackup) - 
+							- Control file - current database structure/metadata
+							- SPFILE (server parameter file) - database configuration
+							- Automatically triggered after backups or structural changes
+-----------------------------------------------------------
+
+4. what are the parameters when we change we must have down the database ?
+
+=> ✅ Static Parameters.
+=> Common Static Parameters are -- PROCESSES, SESSIONS, DB_BLOCK_SIZE, CONTROL_FILES
+----------------------------------------------------------------------------------------
+
+5. datafile k offline korle onno user access korte parbe ?
+
+=> ✅ It depend which datafile has got offline. agar users ka object usi datafile pe
+hain then user access nehi kar sakta.
+-----------------------------------------------------------
+
+6. max size of tablespace?
+=> ✅ 32GB (with 8kb default ke saath) for small tablespace.
+-----------------------------------------------------------
+
+7. What is the PAR file ?
+=> ✅ It is used to take logical backup to little bit better way.
+
+-----------------------------------------------------------
+
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ Logical Backup : IMPdp / EXPdp ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+
+8. Why use CONSISTANT=Y parammeter in logical backup ?
+
+=> ✅ CONSISTENT=Y is used in logical backups to export data in a single consistent state by using undo information, ensuring data integrity during export.
+
+	👉 exp system/password FULL=Y CONSISTENT=Y FILE=full.dmp LOG=full.log
+
+	✅ Without CONSISTENT=Y:
+
+		👉Tables are exported one by one
+
+		👉 If users are doing INSERT/UPDATE/DELETE:
+
+		👉 Some tables may be exported before commit
+
+		👉 Some tables may be exported after commit
+
+		👉 Result → inconsistent backup
+
+	✅ With CONSISTENT=Y:
+
+		👉 Export uses UNDO data
+
+		👉 All tables are read from the same SCN (System Change Number)
+
+	✅ ORA-01555: snapshot too old --- error occured without CONSISTENT=Y
+
+---------------------------------------------------------------------------------------------
+
+9. What is database REFRESH Activity ?
+
+=> ✅	 A Database Refresh is the process of copying data from a source database 
+			(PROD or another environment) to a target database (TEST, DEV, or UAT). 
+
+	-> To do this with RMAN 
+	-> EXpdp / IMpdp
+
+	Using RMAN :: 
+		👉 take backup in production DB
+		👉 transfer this backup in the DEV DB
+		👉 restore backup in the DEV DB
+		👉 Now, if DEV has more extra objects then after restore PROD backup all are gone.
+		So, prevent this we use - EXPDP/IMPDP
+---------------------------------------------------------------------------------------------
+
+10. Basic steps of taking 'EXPDP/IMPDP' ?
+
+=> 	👉 Create a directory in OS promt -  mkdir bckup_exp; 
+
+		👉 Mapping this directory in the database. 
+					sql> create directory prod_bckup as '/u01/app/oracle/bckup_exp';
+
+		👉 Permission 'prod_bckup' this directory. 
+					sql> grant read,write on directory prod_bckup to SYS; 
+
+		👉 expdp system/oracle directory=prod_bckup logfile=bckup_1.log dumpfile=bckup_1.dmp full=y;
+
+		👉 View of data_pump -- desc dba_datapump_jobs;		
+---------------------------------------------------------------------------------------------
+
+11. What is PAR file ?
+
+=> 	✅ A Parameter File (PARFILE) is a text file that contains a set of parameters used for 
+			Oracle Data Pump Export (expdp) and Import (impdp). 
+
+		✅ Instead of typing a long command in the terminal, you can store all parameters in a .par file and reference it while running expdp or impdp.
+
+--------------------------------------------------------------------------------------
+
+12. Why Use a Parameter File?
+	=> Avoids Long Command Lines – Makes commands more readable and manageable.
+	   Reduces Errors – Helps avoid typos when using multiple parameters.
+	   Reusable – You can reuse the .par file for repeated backups or imports.
+	   Better Organization – Parameters are structured in a clean format.
+--------------------------------------------------------------------------------------
+
+10. Purpose of using remap_schema / remap_table / remap_tablespace ?
+=>
+
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ Backups Related Questions ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+
+
+11. Show backup repositry or lists of all backup ?
+=> RMAN> list backup summary;
+--------------------------------------------------------------------------------------
+
+12. Show details view of backups with location ?
+=> RMAN> list backup;
+--------------------------------------------------------------------------------------
+
+
+16. View for monitor logical backup jobs ?
+=> desc dba_datapump_jobs; 
+	 select owner_name, job_name, state from dba_datapump_jobs;
+--------------------------------------------------------------------------------------
+
+17. Scope = both, Scope = memery,  Scope = spfile - purposes ?
+
+✅ SCOPE = MEMORY
+👉 All changes happend in memory(RAM), after DB restart changes are gone
+👉 USE CASE: Temporary fix, Testing purpose.
+👉 SYNTAX : ALTER SYSTEM SET UNDO_RETENTION = 3600 SCOPE = MEMORY;
+
+✅ SCOPE = SPFILE
+👉 All changes happend in SPFILE, After restart changes will effect.
+👉 USE CASE: Want changes effect after restart.
+👉 SYNTAX : ALTER SYSTEM SET SGA_MAX_SIZE = 8G SCOPE = SPFILE;
+
+✅ SCOPE = BOTH
+👉 All changes happend in both memory & SPFILE. Instant effect not need to restart.
+👉 USE CASE: Permanent changes needed.
+👉 ALTER SYSTEM SET UNDO_RETENTION = 3600 SCOPE = BOTH;
+
+--------------------------------------------------------------------------------------
+18. What is inside parameter file ?
+	=> DB block size information, controlfile location, Database name etc.
+--------------------------------------------------------------------------------------
+
+19. How to take incremental lvl 1 for datafile backup ?
+=> BACKUP INCREMENTAL LEVEL 1 DATAFILE 'datafile_path_and_name';
+=> BACKUP INCREMENTAL LEVEL 1 DATAFILE '/u01/app/oracle/oradata/orcl/users01.dbf';
+--------------------------------------------------------------------------------------
+
+20. How to take level 0 incremental backup syntax ?
+=> 
+-- Level 0 incremental backup (base for incremental strategy)
+BACKUP INCREMENTAL LEVEL 0 DATABASE;
+
+-- Level 1 incremental (captures changes since Level 0)
+BACKUP INCREMENTAL LEVEL 1 DATABASE;
+
+-- Differential (default) - backs up changes since last Level 0 or 1
+BACKUP INCREMENTAL LEVEL 1 DATABASE;
+
+-- Cumulative - backs up all changes since last Level 0
+BACKUP INCREMENTAL LEVEL 1 CUMULATIVE DATABASE;
+--------------------------------------------------------------------------------------
+
+21. RMAN & EXPDP which is good/safe and why ?
+=> RMAN -- complete recovery possible. so, RMAN is good for bckup
+=> EXPDP -- Complete recovery not possible. 
+--------------------------------------------------------------------------------------
+
+22. How to take backup only metadata ?
+=> expdp SYSTEM/ORACLE@PROD \ SCHEMAS=SCHEMA_NAME \ DIRECTORY=DATAEXPORT \
+DUMPFILE=metadata_only.dmp \ CONTENT=METADATA_ONLY
+--------------------------------------------------------------------------------------
+
+23. When we use REMAP_TABLE ?
+=> 

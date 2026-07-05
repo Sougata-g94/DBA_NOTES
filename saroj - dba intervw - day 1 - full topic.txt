@@ -1,0 +1,42 @@
+1. how to connection established ?
+Ans-> 
+=====================================================================================================
+2. how instance recovery process ?
+Ans-> 📌 Instance Recovery is Oracle’s automatic process to bring a database back to a consistent state after a crash, power failure, or instance failure — without losing committed data.
+
+📌 Managed automatically by the SMON (System Monitor) background process.
+=====================================================================================================
+3. how long database instance start, how to check ?
+Ans->   📌 There is a view called 'v$instance'
+		📌 SELECT instance_name,host_name,startup_time FROM v$instance;
+
+=====================================================================================================
+4. What is the purpose of DB link ?
+Ans-> 	📌It lets one database connect to another database directly,
+		📌The connection is initiated by the database server itself, not your laptop or client.
+		📌Your SQL statement in DB1 can fetch/update data in DB2 without you logging into DB2 separately.
+		📌DB links store credentials, so they must be secured and access-controlled.
+		📌Use private DB links for user-specific access and public DB links only when necessary.
+=====================================================================================================
+5. user datafile lost how to restore it ?
+	=> Database in ARCHIVELOG mode
+	-- 1. Start RMAN and connect
+	rman target /
+
+	-- 2. Restore missing datafile from backup
+	RESTORE DATAFILE '/u01/app/oracle/oradata/ORCL/users01.dbf';
+
+	-- 3. Recover it using archived logs
+	RECOVER DATAFILE '/u01/app/oracle/oradata/ORCL/users01.dbf';
+
+	-- 4. Bring it online
+	ALTER DATABASE DATAFILE '/u01/app/oracle/oradata/ORCL/users01.dbf' ONLINE;
+
+	📌 In Layman Terms:
+	You copy back the lost file from backup, then replay all transactions from archive logs to bring it up-to-date.
+=====================================================================================================
+
+6. What is diffrential backup ?
+
+Ans-> 📌 You take a backup of only the blocks that have changed since your last full backup — but not since the last incremental backup.
+

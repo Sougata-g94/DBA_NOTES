@@ -1,0 +1,166 @@
+/** ============================== PATCHING INTERVIEW QUESTIONS ================================== */
+
+1. What is the location of OPATCH ?
+=> $ORACLE_HOME location. (/u01/app/oracle/product/19/db).
+--------------------------------------------------------------------------------------
+2. Which is the utility tool ?
+=> 'OPatch' is the opatch utility tool. And location is '/u01/app/oracle/product/19/db/OPatch'
+--------------------------------------------------------------------------------------
+*3. How to check which is the last patche applied ?
+=> ./opatch lsinventory  *(This will give you big output)*
+--------------------------------------------------------------------------------------
+*4. What is the current database version check ?
+=> Sqlplus / as sysdba  OR  /u01/app/oracle/product/19/db/OPatch/opatch lsinv | grep desc
+--------------------------------------------------------------------------------------
+*5. What are last patch that has been applied ?
+	What year patch applied ? 
+	What are the List of all sub set patch applied ? 
+	What is the log file of that patches ?
+	What is the opatch utility version ? - Every things cover in below commands ?
+
+=> $ORACLE_HOME/OPatch/opatch lsinventory
+--------------------------------------------------------------------------------------
+*6. how to check opatch utility tool version ?
+
+=> Go to DB home location ->'/u01/app/oracle/product/19/db/OPatch'
+Then trigger this command ->  './opatch version'
+--------------------------------------------------------------------------------------
+*7. How to check long running session ?
+=> V$SESSION_LONGOPS
+--------------------------------------------------------------------------------------
+5. Another short way to check last patch version details ? 
+=> /u01/app/oracle/product/19/db/OPatch/opatch lsinv | grep desc   (This will give you small output)*
+
+** Once run this command you'll get output like -
+ARU platform description:: Linux x86-64
+Patch description:  "Database Release Update : 19.15.0.0.220419 (33806152)"
+_________________________________________ 19.15.0.0 is the version
+_________________________________________220419 -> 22 is the 'year' -> 04 is the 'month' -> 19 is the 'date'.
+Patch description:  "OCW RELEASE UPDATE 19.3.0.0.0 (29585399)" **
+
+--------------------------------------------------------------------------------------
+4. Read any readme.html file after Patch install ?
+=> Location - '/u01/app/oracle/product/19/db/33859214/33803476'
+-------------------------------------------------------------------------
+
+5. See the patch number after install patch ?
+=> go to location -> '/u01/app/oracle/product/19/db'
+--------------------------------------------------------------------------------------
+
+*6. To check patch version in sql command ?
+
+=> select * from dba_registry_history order by action_time desc;
+=> select action,ACTION_TIME,PATCH_ID,PATCH_UID,STATUS from dba_registry_sqlpatch;
+--------------------------------------------------------------------------------------
+
+7. What is the last patch you applied ?
+=> 19.15 RU or 19.22 RU
+--------------------------------------------------------------------------------------
+8. What was maximumm Database size you used ?
+=> 500 GB min to 20TB max
+--------------------------------------------------------------------------------------
+9. What's the Issues encounter do you have during patching ?
+=> i). FRA issue ii). Network failior iii). File space  iv). LIB/binary file corruption.
+--------------------------------------------------------------------------------------
+10. Duration of patching ?
+=> 30 mnt to 1 hrs.
+--------------------------------------------------------------------------------------
+11. Local and central inventory diffrences ?
+
+=> 🔹 Local Inventory - IT IS INSIDE THE Oracle Home.
+	
+	👉 LOCATION --- $ORACLE_HOME/inventory
+	👉 IT STORE Oracle Home information
+	👉 Installed components
+	👉 Patch history
+
+	🔹 Example - 
+
+	if server has 2 ORACLE_HOME, then will have to 2 local inventory hoga.
+
+	🔹 Central Inventory - system level inventory
+
+	👉 LOCATION --- /u01/app/oraInventory
+	👉 IT STORE -- all Oracle Homes which installed on the servers
+	👉 Oracle products list
+	👉 Oracle Home locations
+	👉 It stores entire software record Oracle server.
+
+
+12. /************************* HIGH LEVEL STEPS OF PATCHING :: ****************************/
+
+=> Prechecks -> Patching -> Postcheck
+
+## Prechecks ::
+--------------
+i. Check the Backup status. Backup should be up to date. Take a backup with pfile as well. 
+														**(LIST BACKUP;)**			
+ii. Check invalid objects. **(v$db_objects / dba_objects)
+iii. No LRT's (long running transactions). **(v$longops)
+iv. Stop the Linstner. **(lsnrctl stop Linstner)
+v. Stop database. **(srvctl stop database -d db_name)
+vi. Download OPatch, unzip, analyze. Before stop DB, we've to opatch & patch S/W in our database.
+vii. Check file system space. **(/mount point should have 13+ GB space). (df -h)
+viii. Check last patch details. (opatch lsinventory)
+
+
+## Postcheck ::
+-----------------
+i. Check patch has applied or not using './opatch lsinventory' command.
+ii. Start database.
+iii. Start Listner.
+iv. Run utlrp.sql to check invalid object and revalidate it.
+V. ./datapatch verbose (it register updated patch on data dictionary).
+vi. Also, we have to check from sql> prompt that patch successfully applied or not. 
+Using this view - 'dba_registry_sqlpatch';
+
+
+## Patching ::
+-------------------
+Only we do - Apply patch. (./opatch apply).
+	Once patch will be completed we do validate the patch using './opatch lsinventory'.
+	Using this comman we got - i). last patch apply ii). list of patch iii). Give you log file location
+	iv). home location  v). Inventory location  vi). date of time of when patch has applied.
+
+======================================================================================
+
+13. How to rollback of patch ?
+
+=> 	🔹 Step 1
+
+	👉 First we need to identify which patch are using.
+	👉 To check go to -> Oracle Home -> opatch lsinventory
+	👉 Using this we get to know - Patch number, Patch type and Oracle Home location.
+
+	🔹 Step 2
+
+	👉 'OPatch utility' is the main tool to Rollback.
+
+	🔹 Rollback Steps (Database Patch)
+
+	👉 Step 1: Database shutdown - SQL> SHUTDOWN IMMEDIATE;
+	👉 Step 2: Listener stop - lsnrctl stop
+	👉 Step 3: Go to Oracle Home - cd $ORACLE_HOME/OPatch
+	👉 Step 4: Rollback command - opatch rollback -id PATCH_NUMBER 
+						Example  - (opatch rollback -id 34765931)
+	👉 Step 5: Start listener & database - lsnrctl start & STARTUP;
+======================================================================================
+
+14. what is the purpose of datapatch verbose ?
+
+=> Command: $ORACLE_HOME/OPatch/datapatch -verbose
+
+  🔹 PURPOSE --
+
+	👉 It update the dictionary objects of Database.
+	👉 Execute SQL scripts of Patch. 
+	👉 Synchronize Database aur Oracle Home.
+	👉 Show the Detailed output of patch.
+
+  🔹 Agar datapatch run na kare toh kya hoga --
+
+  	👉 Patch will be incomplete.
+  	👉 Occures ORA errors.
+  	👉 Features doesn't work properly.
+
+----------------------------------------

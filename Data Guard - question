@@ -1,0 +1,590 @@
+1. What is dataguard ?
+
+=> its a oracle feature, it is based on replication and this feature provides 3 important 
+factors. i>. High Avalibility (HA), ii>. Disaster Recovery (DR), iii>. Data Protection (DP)
+
+Data Protection (DP),  —  Anyhow, we can’t afford any data losses. 
+High Availability (HA),  — it will be available 24x7, so it connects to the database.
+Disaster Recovery (DR). — natural calamities, power outrage then it will use.
+
+--------------------------------------------------------------------------------------
+
+2. Why we use dataguard when we do the recovery & restore from backup ?
+
+=> reason is, 
+one, if any natarual calamities occured then it hard to restore our backup.
+two, if our backup has other server and backup size too large (30-50tb) it hard to restore
+   because it will take too much time. 	
+--------------------------------------------------------------------------------------
+
+3. Maximumm how many standby DB we can create ?
+=> 30 standby database.
+--------------------------------------------------------------------------------------
+
+4. How many types of standby database ?
+=> 3 standby DB. Physical standby, logical standby, snapshot standby.
+--------------------------------------------------------------------------------------
+
+5. Physical Standby --
+
+=> all redo data is moving to primary to physical standby. jo bhi datafiles mein blocks hain 
+	woh move to physical standby. which is consider as block by block copy.
+
+=> Exact block by block copy of primary database.
+	Synchronous or Asynchronous update.
+	Open mode - READ_ONLY mode
+	Same DBID will having in physical standby. 
+
+=> Benifites -- 
+
+	- it's having data protection.
+	- deaster recovery and high avalavility solution.
+	- if primary down then we can make standby as primary.
+	- if backup job running and it take too much time consuming and resources that occures sloness of the database. so, overcome this situation we can run RMAN job in standby.
+
+
+--------------------------------------------------------------------------------------
+
+6. Logical Standby --
+
+=> 	It'll apply SQL statment primary to standby database. it's not that much consistant as physical standby. 
+
+=> Benifites --
+	- DBID is diffrent.
+	- READ_ONLY as well as READ,WRITE mode.
+	- there can be some additional database objects (table,indexs,synnonym)
+
+=> Purpose of using this --
+
+	- Doing some analysis purposes.
+	- Create some additional database object we can use it.
+--------------------------------------------------------------------------------------
+
+7. Snapshot Standby --
+
+=> if we are go for testing (parameter change), can we apply parameter changes(increase size) in the directly primary database ? no right. 
+We've to do this low envirment like, UAT,TEST. In this kind of senario we use 'Snapshot standby' database. 
+
+If in 'SNAPSHOT STANDBY' we don't do any changes it consider as a 'PHYSICAL STANDBY'.
+As soon as we do any changes it will become 'SNAPSHOT STANDBY'.
+
+👉 Flashback -- This snapshot standby having the feature call 'FLASHBACK'. 
+
+--------------------------------------------------------------------------------------
+
+8. What is block by block copy means ?
+👉 When we take physical files backup using RMAN that will be block by block copy. 
+--------------------------------------------------------------------------------------
+
+9. How do you resolve 'Archive gaps' in primary to standby database ?
+👉 -- Standby pe:
+SELECT * FROM V$ARCHIVE_GAP;
+
+👉 -- GAP status check:
+SELECT GAP_STATUS FROM V$ARCHIVE_DEST_STATUS WHERE TARGET = 'STANDBY';
+
+👉 Gap ke 2 Types:
+
+👉 RESOLVABLE GAP - Archive logs Primary pe abhi bhi EXIST karte hain! FAL ya Manual se fix!
+👉 UNRESOLVABLE GAP - Archive logs Primary pe bhi DELETE ho gaye! RMAN restore needed! 
+
+--------------------------------------------------------------------------------------
+
+10. Types of Protection Mode ?
+
+=> 3 types of protection mode. 
+
+👉 Maximum Performance Mode (default) - 
+
+	- Minimum dataloss. 
+	- Noaffirm and async parameter use.
+	- It is a default protection mode.
+
+👉 Maximum Protection Mode :
+
+	- It will have Highest protection.
+	- No data lost. 
+	- It can have affirm and Sync parameter.
+
+👉 Maximum Availability Mode :
+
+	- It also can give highest protection.
+	- It can have Affirm or Noaffirm and Sync parameter use.
+
+--------------------------------------------------------------------------------------
+
+11. What is failover and switchover ?
+ 
+👉 Switcover -- Basically this is a pland activity. For example - if i doing some patching activity, upgradation we need to DB down, listner stop right. So, we can't afford 
+these on production database. So, we move primary to standby. so, we can do all activity on 
+standby database. This Role Reversal process called 'Switchover'.
+
+👉 Failover -- This is a unplaned activity. if primary got crashed then standby convert as a primary.
+--------------------------------------------------------------------------------------
+
+12. What is LNS server process ?
+=> LNS (Log writer Network Service) is a background process it will residing on primary side.
+
+👉 Purpose -- 
+
+LNS is moving/replicating all the redo entries primary to standby over a network. If LNS network is down won't be replicate primary to standby.
+--------------------------------------------------------------------------------------
+
+13. how many background process on primary side ?
+
+=> 6 BG process. 👉 LNS / 👉 LGWR  / 👉 ARCn / 👉 DBwn / 👉 CKPT / 👉 PMON
+
+📌 LNS - LNS is moving/replicating all the redo entries primary to standby over a network.
+
+📌 LGWR - it writes redo entries redo log buffer to online redo log file.
+
+📌 ARCn - It create archive copies of online redo log file.
+
+📌 DBWn - writes all dirty blocks from buffer cacahe to datafiles.
+
+📌 CKPT - Intructs DBwn to update control file.
+--------------------------------------------------------------------------------------
+
+14. How many background process on standby side ?
+
+=> 5 BG process. - 👉 RFS / 👉 MRP / 👉 LSP  / 👉 FAL /  👉 SMON /  👉 PMON
+
+
+📌 RFS (Remote File Server) : Recives all redo streams which coming from Primary. 
+
+	👉 RFS receive karke 'Standby Redo Log' Files (SRL) pe likhta hai!
+	👉 Main reciver process of DG.
+	👉 Always running on standby
+
+📌 MRP (Manage Recovery Process) : 
+
+If database is 'physical standby' db then 'MRP' will apply all archives in physical standby database. Apply redo data on physical standby.
+
+	👉 MRP start command - 
+	ALTER DATABASE RECOVER MANAGED STANDBY DATABASE USING CURRENT LOGFILE DISCONNECT;
+
+
+📌 LSP (Logical Standby Process) : 
+
+It convert all redo data to SQL and then apply it to standby.
+If database is 'logical standby' db then 'LSP' will apply all archives in logical standby database.
+
+📌 FAL (Fetch Archive Log) : 
+
+If any archive gap occures on standby then FAL automatically fetch missing archive logs
+from primary. 
+
+	👉 FAL Parameters - FAL_SERVER = Primary
+			       FAL_CLIENT = Standby
+--------------------------------------------------------------------------------------
+
+15. What is RFS Process ?
+
+👉 RFS (Remote File Server) : This RFS recived the data (redo entries) which coming from primary side and share by LNS in the standby side, and applying it to standby database.
+
+👉 main recive process of DataGuard.
+👉 Always running in standby database.
+
+--------------------------------------------------------------------------------------
+
+16. Sync and Async & Affirm and Noaffirm parameter diffrence ?
+
+👉 Async - LNS carry data from redo log file (disk).
+
+👉 Noaffirm - Not getting any acknowledgment from standby db. It won't required any confirmation. 
+
+👉 Sync - LNS carry data from redo log file buffer (memory).
+
+👉 Affirm - It wait for the acknowledgment for the redo to be written into disk.
+
+--------------------------------------------------------------------------------------
+
+17. What is the views to check protection mode, status of DG, ARCn replication ?
+👉 SELECT NAME, DB_UNIQUE_NAME, DATABASE_ROLE, PROTECTION_MODE, PROTECTION_LEVEL, OPEN_MODE
+FROM V$DATABASE;
+--------------------------------------------------------------------------------------
+
+18. How to switch any protection mode (ex- max protection to max performance) ?
+
+👉 ALTER DATABASE SET STANDBY DATABASE TO MAXIMIZE PERFORMANCE;
+--------------------------------------------------------------------------------------
+
+19. How do we check that primary and standby is sync or not so no Archive GAPs occur ?
+
+👉 PRIMARY current sequence Check :
+
+SELECT THREAD#,MAX(SEQUENCE#) CURRENT_SEQ FROM V$ARCHIVED_LOG WHERE DEST_ID = 1
+GROUP BY THREAD#;
+
+👉 STANDBY current sequence Check :
+
+SELECT THREAD#,MAX(SEQUENCE#) FROM V$ARCHIVED_LOG WHERE APPLIED = 'YES'GROUP BY THREAD#;
+
+🔄 Gap Resolve kaise karein?
+
+Automatic — FAL se:
+
+SHOW PARAMETER FAL_SERVER; -- Primary has missing logs.
+-- FAL_CLIENT = PRIMARY
+
+SHOW PARAMETER FAL_CLIENT; -- Standby wants the missing logs from primary side.
+-- FAL_SERVER = STANDBY
+
+-- FAL gap fetch manually trigger:
+
+👉 ALTER DATABASE RECOVER MANAGED STANDBY DATABASE DISCONNECT;
+-- MRP restart → FAL kick in! ✅
+--------------------------------------------------------------------------------------
+
+20.1. What is FAL ?
+
+👉 FAL = Fetch Archive Log
+
+✅ Purpose:
+
+Standby pe jo Archive Logs missing hain (GAP) — unhe automatically Primary se FETCH karo!
+
+Automatic Gap Resolution!
+--------------------------------------------------------------------------------------
+
+20. What is Switcover and Failover ?
+
+ 👉 Switcover -- Basically this is a pland activity. For example - if i doing some patching activity, upgradation we need to DB down, listner stop right. So, we can't afford 
+these on production database. So, we move primary to standby. so, we can do all activity on 
+standby database. This Role Reversal process called 'Switchover'.
+
+👉 Failover -- This is a unplaned activity. if primary got crashed then standby convert as a primary.
+--------------------------------------------------------------------------------------
+
+21. How to redo apply on logical standby ? 
+👉 ALTER DATABASE START LOGICAL STANDBY APPLY IMMEDIATE;  OR,
+👉 ALTER DATABASE START LOGICAL STANDBY APPLY
+--------------------------------------------------------------------------------------
+
+22. How to stop redo apply on logical standby ? 
+👉 -- Immediate stop:
+ALTER DATABASE ABORT LOGICAL STANDBY APPLY;
+
+-- Graceful stop:
+👉 ALTER DATABASE STOP LOGICAL STANDBY APPLY;
+--------------------------------------------------------------------------------------
+
+23. How do you resolve 'Archive Gaps' in primary to standby database ?
+
+✅ Identify the GAPs on Standby DB -- SELECT * FROM V$ARCHIVE_GAP;
+✅ RESOLVE ARCHIVE GAP
+        │
+        ├── Method 1: FAL Automatic
+        ├── Method 2: Manual SCP
+        ├── Method 3: RMAN Restore
+        └── Method 4: MRP Restart 
+
+✅ Method 1 — FAL Automatic (Best!) :
+
+-- Standby pe:
+👉 SHOW PARAMETER FAL_SERVER;
+-- FAL_SERVER = PRIMARY 
+
+👉 SHOW PARAMETER FAL_CLIENT;
+-- FAL_CLIENT = STANDBY 
+
+-- Nahi set hain toh:
+👉 ALTER SYSTEM SET FAL_SERVER = 'PRIMARY' SCOPE = BOTH;
+
+👉 ALTER SYSTEM SET FAL_CLIENT = 'STANDBY' SCOPE = BOTH;
+
+-- Standby pe:
+-- Stop The MRP:
+👉 ALTER DATABASE RECOVER MANAGED STANDBY DATABASE CANCEL;
+
+-- Start The MRP:
+👉 ALTER DATABASE RECOVER MANAGED STANDBY DATABASE USING CURRENT LOGFILE DISCONNECT;
+
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ VIEWS of DataGuard ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+
+1. How to know all the destination of oracle DataGuard configuration, Modes, Current
+value, Status ?
+
+👉 V$ARCHIVE_DEST;
+--------------------------------------------------------------------------------------
+
+2. Check database status ?
+👉 V$database;
+--------------------------------------------------------------------------------------
+3. Check session ?
+👉 V$session;
+--------------------------------------------------------------------------------------
+
+4. Check of database instance ?
+👉 V$instance;
+--------------------------------------------------------------------------------------
+
+5. Check runtime and configuration info for archive redo log destination ?
+👉 V$ARCHIVE_DEST_STATUS;
+--------------------------------------------------------------------------------------
+
+6. How to identify gaps in the archive redo log file ?
+👉 V$ARCHIVE_GAP;
+--------------------------------------------------------------------------------------
+
+7. Check Archive redo log information from control file ?
+👉 V$ARCHIVED_LOG; 
+--------------------------------------------------------------------------------------
+
+8. What is FORCE_LOGGING ?
+
+👉 select FORCE_LOGGING from v$database;
+👉 It's a settings that force oracle to genarate redo logs for all changes. 
+👉 all the transaction happening to the production should have their logs enable.
+
+--- SYNTAX -  ALTER DATABASE FORCE LOGGING;
+
+✅ NOLOGGING Kya Hai :
+
+👉 Jab aap koi operation NOLOGGING mode mein karte ho, Oracle redo logs ko minimum generate karta hai.
+
+CREATE TABLE emp_new NOLOGGING AS SELECT * FROM emp;
+--------------------------------------------------------------------------------------
+
+9. LOG_ARCHIVE_CONFIG parameter purpose ?
+
+👉 main parameter is 'DG_CONFIG'
+👉 How many databases you are configuring. 
+--------------------------------------------------------------------------------------
+
+10. LOG_ARCHIVE_DEST_2 parameter purpose ?
+
+👉 show parameter LOG_ARCHIVE_DEST_2;
+👉 Whichever archive are genarate in to the primary, this parater tell their destination.
+--------------------------------------------------------------------------------------
+
+11. LOG_ARCHIVE_DEST_STATE_2 parameter purpose ?
+
+👉 This works like a bridge. If primary to standby log shipping happends this should be
+enabled. Archive logs only shipped when it is enabled. 
+
+👉 This is most important parameter to check when archive gaps occured. We need to check this parameter whether it has enabled or not. 
+--------------------------------------------------------------------------------------
+
+12. LOG_ARCHIVE_FORMAT parameter purpose ?
+
+👉 Whatever logs are genarated in the primary it shoud be in that format like %t_%s_%r.dbf
+👉 alter system set log_archive_format='%t_%s_%r.arc' scope=spfile;
+👉 If you see the change you have to restart once because tou changed the parameter file.
+--------------------------------------------------------------------------------------
+
+13. LOG_ARCHIVE_MAX_PROCESS parameter purpose ?
+
+👉 How many process you can run. default is 4
+--------------------------------------------------------------------------------------
+
+14. REMOTE_LOGIN_PASSWORDFILE parameter purposes ?
+
+👉 This passwordfile we can connect to primary and standby server, that is why we're
+making it 'EXCLUSIVE'.
+--------------------------------------------------------------------------------------
+
+15. FAL parameter (FAL client & FAL server) ?
+
+---- Suppose ---- these are my 2 DB
+
+👉 Primary DB = prod
+👉 Standby DB = prods
+👉 Show parameter FAL;
+
+Now, FAL client will be = prods AND, FAL server will be = prod
+--------------------------------------------------------------------------------------
+
+16. STANDBY_FILE_MANAGEMENT parameter purpose ? Why we're doing it 'AUTO' ?
+
+👉 If we add some datafile in primary database, it should be replicated to Standby 
+to make primary and standby in sync. It will autometically replicated all things whatever happends in primary to standby if this parameter set as 'AUTO'.
+--------------------------------------------------------------------------------------
+
+17. Check standby redolog view ?
+
+👉 v$standby_log;
+--------------------------------------------------------------------------------------
+
+18. What is Redo transport services ?
+
+👉 It's a process where redo data safely transfer from primary to standby. 
+👉 Components are - ARCn, LGWR
+--------------------------------------------------------------------------------------
+
+19. Archive gap resolution steps ?
+
+👉 Check alertlog
+👉 Check MRP process running or not
+👉 Listners up or not
+👉 FRA should have sufficient.
+--------------------------------------------------------------------------------------
+
+20. Snapshot and Active DG diffrent ?
+ 
+✅ Snapshot --
+
+👉 STEP 1:
+Physical Standby chal raha hai, MRP apply kar raha hai
+
+👉 STEP 2:
+Convert to Snapshot Standby:
+--MRP STOP ho jaata hai
+--Guaranteed Restore Point
+automatically banta hai!
+--DB READ-WRITE open hota hai!
+
+👉 STEP 3:
+--Dev/Test team kaam karte hain:
+--INSERT, UPDATE, DELETE, DDL
+Sab allowed! ✅
+--Primary se Redo aa raha hai
+but APPLY nahi ho raha! ⚠️
+
+👉 STEP 4:
+Testing complete!
+Convert back to Physical Standby:
+Restore Point pe Flashback!
+Testing data GONE! ✅
+MRP wapas start! ✅
+Redo apply resume! ✅
+
+✅ Commands -- 
+
+-- Physical → Snapshot:
+DGMGRL> CONVERT DATABASE 'STANDBY' TO SNAPSHOT STANDBY;
+
+-- Ya SQL se:
+SQL> ALTER DATABASE CONVERT TO SNAPSHOT STANDBY;
+
+-- Verify:
+SELECT DB_UNIQUE_NAME,DATABASE_ROLE,OPEN_MODE FROM V$DATABASE;
+
+-- DATABASE_ROLE = SNAPSHOT STANDBY
+-- OPEN_MODE     = READ WRITE 
+
+-- Snapshot → Physical wapas:
+DGMGRL> CONVERT DATABASE 'STANDBY' TO PHYSICAL STANDBY;
+
+-- Testing data automatically GONE! 
+-- MRP apply resume! 
+
+
+✅ Active DG (ADG) -- Reporting purpose we use. Generating reports. AWS,ASH report.
+
+Physical Standby: DQL only.
+READ-ONLY + MRP APPLY dono!
+
+Primary pe:
+Redo generate hota hai
+
+Standby pe:
+MRP real-time apply karta hai
+AND Users DQL queries kar sakte hain!
+
+Real-time updated data read kar sakte hain! 
+
+✅ Commands:
+
+-- ADG start karo:
+-- Standby ko READ ONLY open karo:
+👉 SQL> ALTER DATABASE OPEN READ ONLY;
+
+-- MRP apply bhi start karo:
+👉 SQL> ALTER DATABASE RECOVER MANAGED STANDBY DATABASE USING CURRENT LOGFILE DISCONNECT;
+
+-- Verify:
+👉 SELECT DB_UNIQUE_NAME,DATABASE_ROLE,OPEN_MODE FROM V$DATABASE;
+
+-- DATABASE_ROLE = PHYSICAL STANDBY
+-- OPEN_MODE     = READ ONLY WITH APPLY 
+
+-- MRP check:
+👉 SELECT PROCESS, STATUS FROM V$MANAGED_STANDBY WHERE PROCESS = 'MRP0';
+-- STATUS = APPLYING_LOG 
+--------------------------------------------------------------------------------------
+
+21. How to start the MRP ?
+
+-- Standby pe:
+👉 ALTER DATABASE RECOVER MANAGED STANDBY DATABASE DISCONNECT FROM SESSION;
+
+--------------------------------------------------------------------------------------
+22. How to stop MRP ?
+
+-- Standby pe:
+👉 ALTER DATABASE RECOVER MANAGED STANDBY DATABASE CANCEL;
+--------------------------------------------------------------------------------------
+
+23. How to break the replication primary to standby ?
+
+👉 ALTER SYSTEM SET LOG_ARCHIVE_DEST_STATE_2=DEFER;
+
+--------------------------------------------------------------------------------------
+
+24. How to convert protection mode one to another ?
+
+👉 Alter database set standby database to maximum performance
+--------------------------------------------------------------------------------------
+
+25. DG Broker purpose ? parameter of DG Broker ?
+
+👉 CENTRALIZED MANAGEMENT -- DGMGRL tool se Poora DG manage karo! Primary + Standby dono!
+👉 AUTOMATED SWITCHOVER -- DGMGRL> SWITCHOVER TO 'STANDBY'; in one COMMAND!
+👉 FAST-START FAILOVER (FSFO) -- Automatic failover! If Primary fail → Broker automatically Standby ko Primary banata hai! Zero human intervention!
+
+✅ DG Broker — Parameters :
+
+PARAMETER 1: DG_BROKER_START
+PARAMETER 2: DG_BROKER_CONFIG_FILE
+
+✅ DMON background process isi se start/stop hota hai.
+
+✅ Broker START karo:
+-- PRIMARY & STANDBY BOTH :
+ALTER SYSTEM SET DG_BROKER_START = TRUE SCOPE = BOTH;
+
+✅ Broker STOP karo:
+ALTER SYSTEM SET DG_BROKER_START = FALSE SCOPE = BOTH;
+
+✅ Current value check:
+SHOW PARAMETER DG_BROKER_START;
+
+--------------------------------------------------------------------------------------
+
+26. Where we can run DG Broker command ?
+=> DGMGRL> in this prompt we can run all DG Broker related commands.
+--------------------------------------------------------------------------------------
+
+27. How to identify DG_Broker configured or not ?
+=> SQL> Show parameter dg_broker;
+=> Show configuration;
+--------------------------------------------------------------------------------------
+
+28. How to Set dg_broker TRUE ?
+=> alter system set dg_broker_start=TRUE; 
+--------------------------------------------------------------------------------------
+
+29. DG Broker setup steps ?
+
+-----------------------
+Primary and Standby both
+-----------------------
+=> alter system set dg_broker_start=TRUE; 
+=> alter system set LOG_ARCHIVE_DEST_2='' scope=both;
+-------------------
+IN STANDBY SIDE :
+-------------------
+=> dgmgrl / as sysdba
+=> dgmgrl> Create configuration dg_config as primary database is prod connect identifier prod;
+=> dgmgrl> Add database prods as connect identifier is prods maintained as physical;
+=> dgmgrl> enable configuration;
+--------------------------------------------------------------------------------------
+
+30. High level steps of DataGuard ?
+=>
+
+--------------------------------------------------------------------------------------
+
+31. 

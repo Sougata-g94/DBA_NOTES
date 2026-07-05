@@ -1,0 +1,245 @@
+🔍 *Check Installed RU and Patches*
+
+To find out which RU and patches are installed in each Oracle Home, use the opatch lsinventory command. This command will list the installed patches, including their versions. If any recommended patch of the correct version is already installed, you don't need to replace it. This check is particularly relevant for CLIENT homes.
+
+*Example:*
+
+1. Switch to the Oracle user:
+   
+   su - oracle
+   
+
+2. Set the Oracle Home environment variable:
+   
+   export ORACLE_HOME=/u01/oracle/product/19/db
+   
+
+3. Run the command to list installed patches:
+   
+   $ $ORACLE_HOME/OPatch/opatch lsinventory | grep -e Home -e applied -e description
+   
+
+   *Output:*
+   
+   Oracle Home       : /u01/oracle/product/19/db
+   ARU platform description:: Linux x86-64
+   There are 1 products installed in this Oracle Home.
+   .
+   .
+   Patch  30894985     : applied on Fri Aug 21 12:47:55 CDT 2020
+   Patch description:  "OCW RELEASE UPDATE 19.7.0.0.0 (30894985)"
+   Patch  30869156     : applied on Fri Aug 21 12:45:41 CDT 2020
+   Patch description:  "Database Release Update : 19.7.0.0.200414 (30869156)"
+   
+
+Use this information to determine if any updates or patches need to be applied.
+
+---------------------------------------------------------------------------------------------------------------
+
+🔧 *Install OPatch 12.2.0.1.30*
+
+Oracle recommends updating to the latest OPatch version for optimal performance. Make sure to update the OPatch utility in all Oracle software homes being patched.
+
+*Note:* You can install OPatch while systems are online—no need to shut down the grid, database, or client homes.
+
+Ensure the OPatch version is consistent across all Oracle RAC database homes and the Grid home.
+
+*Steps to Update OPatch:*
+
+1. *Check Current OPatch Version:*
+
+   
+   su - oracle
+   whoami # should return oracle
+   export ORACLE_HOME=/u01/oracle/product/19/db
+   
+
+2. *Backup Current OPatch:*
+
+   
+   cd $ORACLE_HOME
+   mv OPatch OPatch_old1
+   
+
+3. *Install New OPatch:*
+
+   
+   cd <stage>
+   unzip p6880880_200000_*.zip -d $ORACLE_HOME
+   
+
+This will update OPatch to the latest version, ensuring consistency and compatibility across your Oracle environments. ✅
+
+---------------------------------------------------------------------------------------------------------------
+
+🔍 *Validate Oracle Inventory*
+
+To ensure consistency of information for GRID and each RDBMS HOME before patching, follow these steps as the oracle user:
+
+1. *Switch to Oracle User:*
+   
+   su - oracle
+   whoami # should be oracle
+   
+
+2. *Check GRID Home Inventory:*
+   
+   export ORACLE_HOME=/u01/grid/oracle/product/19/grid
+   $ORACLE_HOME/OPatch/opatch lsinventory -detail
+   
+
+3. *Check Database Home Inventory:*
+   
+   export ORACLE_HOME=/u01/oracle/product/19/db
+   $ORACLE_HOME/OPatch/opatch lsinventory -detail
+   
+
+4. *Verify Patch Descriptions:*
+   
+   /u01/app/oracle/product/19/db/OPatch/opatch lsinv | grep desc
+   
+
+This process will help ensure that your Oracle environments are correctly set up and ready for patching. ✅
+
+-------------------------------------------------------------------------------------------------------------
+
+🔍 *Check for Open Files* 🔍
+
+All files in the RDBMS or CLIENT Oracle Homes that you intend to patch on this server should be closed. The opatchauto command requires GRID to be started, so files in the GRID home will be open at this time. The opatchauto command will stop and start GRID. TFA should not be running.
+
+If the lsof utility is installed, it can be used to determine if there are open files. The lsof utility might only be installed when Linux is installed. If lsof is not available, use an available utility or continue.
+
+*Examples*:
+
+su - root
+lsof | grep -e COMMAND -e /u01/oracle/product/19/db
+
+--------------------------------------------------------------------------------------------------------------
+
+🚀 *Execute Datapatch* 🚀
+
+Once all RDBMS homes for the primary and standby databases have been patched, execute Datapatch to complete the post-install SQL for all related patches. In a RAC environment, this may be performed with one or more open instances. Do not execute in STANDBY databases; this will be performed through redo apply at the Standby Site.
+
+Datapatch must be executed for all databases that use the RDBMS home where the Database RU and other patches with post-install SQL requirements were applied.
+
+*Commands*:
+
+su - oracle
+export ORACLE_HOME=/u01/oracle/product/19/db
+export ORACLE_SID=<sid>
+$ORACLE_HOME/OPatch/datapatch -verbose
+
+----------------------------------------------------------------------------------------------------------------
+
+✅ *Verify dba_registry_sqlpatch* ✅
+
+Ensure that dba_registry_sqlpatch has been updated with the current Release Update patch 33515361. If it has not, proceed with the remainder of the process and open a service request with Oracle Support to investigate the issue with dba_registry_sqlpatch.
+
+*Commands*:
+
+su - oracle
+export ORACLE_HOME=/u01/oracle/product/19/db
+export ORACLE_SID=<sid>
+$ORACLE_HOME/bin/sqlplus / as sysdba
+Set linesize 132
+select action, ACTION_TIME, PATCH_ID, STATUS from dba_registry_sqlpatch;
+exit
+
+---------------------------------------------------------------------------------------------------------------
+
+🔄 *Verify Instances Are Open and Accepting Connections* 🔄
+
+Ensure that any instances that were started are open and accepting connections.
+
+*Commands*:
+
+export ORACLE_HOME=/u01/grid/oracle/product/19/grid
+$ORACLE_HOME/bin/lsnrctl status
+
+export ORACLE_HOME=/u01/oracle/product/19/db
+export ORACLE_SID=<sid>
+$ORACLE_HOME/bin/sqlplus / as sysdba
+select * from v$instance;
+select count(*), username from v$session group by username;
+
+---------------------------------------------------------------------------------------------------------------
+
+⚠ *Handle Invalid Objects* ⚠
+
+If invalid objects exist, especially Oracle maintained objects, execute utlrp for all PDBs in the CDB.
+
+*Commands*:
+
+cd $ORACLE_HOME/rdbms/admin
+$ORACLE_HOME/perl/bin/perl catcon.pl -n 1 -e -b utlrp -d '''.''' utlrp.sql
+
+Check for invalid objects again after utlrp has been executed.
+
+- If any non-Oracle maintained objects are invalid after the post-SQL tasks and were not invalid before, contact the object owners (e.g., Solution Works) to correct the issue.
+- If any Oracle maintained objects are invalid after the post-SQL tasks, notify an Oracle database support group.
+
+--------------------------------------------------------------------------------------------------------
+
+🛠 Oracle Database Patching Steps 🛠
+
+1. Check OPatch Version 🔍
+   - Check the current version of the OPatch tool.
+   - Upgrade the OPatch utility if needed.
+
+2. Backup ORACLE_HOME 📦
+   - Take a backup of the ORACLE_HOME directory.
+
+3. Shutdown Services ⏹
+   - Shutdown the Database and Listener running from the ORACLE_HOME to be patched.
+
+4. Apply Patch 🔧
+   - Apply the PSU patch on ORACLE_HOME.
+
+5. Validate Patch ✅
+   - Validate the applied patch in the inventory.
+
+6. Post-Installation Steps 🚀
+   - Execute post-installation steps using datapatch.
+
+7. Restart Services 🔄
+   - Startup the Database and Listener services associated with the patched ORACLE_HOME.
+
+8. Verify Patch Status 📊
+   - Verify the status of the applied patch from dba_registry_sqlpatch.
+
+-------------------------------------------------------------------------------------------------------------
+
+🔍 Types of Oracle Database Patches?
+
+🔧 Interim Patches (One-Off Patches): 
+   - Single bug fix or a collection of fixes as required.
+
+🔒 Interim Patches for Security Bug Fixes:
+   - Customer-specific security bug fixes.
+
+🔍 Diagnostic Patches:
+   - Help diagnose or verify a fix or collection of fixes.
+
+📦 Bundle Patch Updates (BPUs):
+   - Cumulative collection of fixes for a specific product or component.
+
+🛠 Patch Set Updates (PSUs):
+   - High impact, low risk, and proven fixes for a specific product or component, including Security Patch Updates.
+
+🛡 Security Patch Updates (SPUs):
+   - Cumulative collection of security bug fixes, formerly known as Critical Patch Updates (CPU).
+
+⚙ System Patch:
+   - Contains several sub-patches usable by OPatchAuto.
+
+🛠 Bundle Patches (BPs):
+   - Comprehensive patch bundles that include multiple fixes and enhancements, typically released quarterly.
+
+📦 Patch Set:
+    - A collection of cumulative patches that includes new functionality and fixes.
+
+🔄 Release Updates (RUs):
+    - Include bug fixes and security patches, usually provided quarterly.
+
+------------------------------------------------------------------------------------------------------------
+

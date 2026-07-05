@@ -1,0 +1,206 @@
+1. Control file and datafile location ?
+=> 👉 /u01/app/oracle/oradata/PROD  or  $oracle_base/oradata/PROD
+	 👉 SHOW PARAMETER control_files;
+--------------------------------------------------------------------------------------
+
+2. Pfile and spfile location ?
+=> 👉 /u01/app/oracle/product/19.0.0/dbhome_1/dbs   or   $oracle_home/dbs
+	 👉 SHOW PARAMETER spfile;
+--------------------------------------------------------------------------------------
+
+3. Listner and TNS location ?
+
+=>  👉 /u01/app/oracle/product/19.0.0/dbhome_1/network/admin   or $oracle_home/network/admin
+
+    👉 i> dba_sys_privs - (system privilege check for user)
+	   ii> dba_tab_privs - (object privilege check for which table)
+--------------------------------------------------------------------------------------
+
+4. Check Long Running Sessions ?
+=> 👉 V$SESSION_LONGOPS;
+--------------------------------------------------------------------------------------
+
+5. Hard Parsing:
+
+👉 If the statement does not exist (cache miss), Oracle parses the SQL statement, generating an execution plan, and then stores this information in the Library Cache for future use (known as hard parsing).
+--------------------------------------------------------------------------------------
+
+6. THE PFILE
+
+👉 we were using a text file called the PFILE (parameter file) for setting the database initialization parameters. This PFILE is read at instance startup time to get specific instance characteristics. The PFILE is text based, and can be edited in an editor like vi on UNIX or Notepad on Windows. Any changes that were made in PFILE would only take effect when the database is restarted.
+--------------------------------------------------------------------------------------
+
+7. THE SPFILE
+
+👉 (server parameter file) - SPFILE is a binary file that contains the same information as the old PFILE. SPFILE permits dynamic changes without requiring you to restart that instance.
+--------------------------------------------------------------------------------------
+
+8. ROLE :
+
+=> ✅ Grouping of Privileges:
+
+	👉 Roles allow you to group multiple privileges together. Instead of granting individual privileges to each user, you can grant a role that contains all the necessary privileges.
+
+
+   ✅  Example / why we use:
+
+	👉 Instead of granting individual privileges like SELECT, INSERT, UPDATE, and DELETE on multiple tables to a user, you can create a role that includes these privileges and then grant the role to the user.
+---------------------------------------------------------------------------------
+
+9. PROFILE:
+
+=> 	✅ Control Resource Usage:
+
+	👉 Profiles allow administrators to set limits on how many amount of system resources a user can consume. 
+	This prevents any single user from monopolizing database resources, which can impact the performance of other users and applications.
+----------------------------------------------------------------
+
+10. 1. User and Schema Diffrences :
+
+=> 	✅ User:
+
+	👉 It is used for authentication and authorization.
+
+=> 	✅ Schema:
+
+	👉 A schema is a collection of database objects that belong to a single user. 
+	   These objects include tables, post_views_count, indexes, sequences, procedures, functions, and packages.
+-------------------------------------------------------------
+
+11. what is SEGMENT ? inside of SEGMENT ?
+
+=> 👉 Segments are the physical storage structures that hold database objects.
+	like -- tables, indexes, or LOBs (Large Objects). 
+	👉	Table, view and index are combined as SEGMENT. 
+------------------------------------------------------------
+
+12. What is EXTENT ?
+
+=> 👉 An extent is a collection of contiguous 'data blocks' within a segment.
+------------------------------------------------------------
+
+13. SYS and SYSTEM users diffrences ?
+
+=> 👉 SYS : Login with SYS user we can shutdown and startup the database.
+
+=> 👉 SYSTEM : Login with SYSTEM user we can do all the things except startup, shutdown and DB creation. These 3  things mainly can't happens without SYS user.
+---------------------------------------------------------------
+
+14. How do you startup your database with restrict for users ? OR, only SYSTEM user can connect to your database how would you do that ?
+
+=> 👉 startup restrict
+--------------------------------------------------------------------------------------
+
+15. In your database which all are the user having locked account, how to check ?
+=> 👉 select USERNAME,ACCOUNT_STATUS from dba_users;
+--------------------------------------------------------------------------------------
+16. What are these account are locked as long as their password has also expired ?
+=> 👉 
+--------------------------------------------------------------------------------------
+17. What is PROFILE ?
+=> 👉 In oracle PROFILE is main use for - restricting the resources being used by the users.
+--------------------------------------------------------------------------------------
+18. PROFILE creation syntax ?
+=> 👉 create profile <profile_name> limit sessions_per_user 2 failed_login_attempts 2 idle_time 3
+--------------------------------------------------------------------------------------
+19. How do we know which user can have to access or privileges how many others users ?
+=> 👉 
+--------------------------------------------------------------------------------------
+20. Grant select privilage to 'emp_test' table of nik' users, sitting on user 'test1' ?
+=> 👉 grant select on emp_test to nik;
+--------------------------------------------------------------------------------------
+   
+22. What is prefix 'OPS$' and why we use it ?
+=> 👉 To knowing user/DBA that it will be a OS authintication user not a normal user. 
+
+
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ LISTNER & TNS interview question :  ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+
+
+1. What is LISTNER and purpose ?
+
+=> 👉 The Oracle Listener is a network process that listens client connection requests 
+		and redirects them to the appropriate Oracle database server process.
+
+	✅ Purpose of Listener -
+
+		👉 Accept incoming client connection requests
+		👉 Identify which database/service the client wants
+		👉 Allow remote connections to the database
+
+	✅ Listener commands (basic) -
+
+		👉 lsnrctl status
+		👉 lsnrctl start
+		👉 lsnrctl stop
+-----------------------------------------------------------
+
+2. listener.ora vs tnsnames.ora diffrence ?
+
+=> 👉 listener.ora is used on the server side to accept connections,
+	👉 tnsnames.ora is used on the client side to find the database.
+
+	✅ listener.ora :
+
+	LISTENER =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = dbserver)(PORT = 1521))
+  )
+
+
+  ✅ tnsnames.ora :
+
+  ORCL =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = dbserver)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVICE_NAME = orclpdb)
+    )
+  )
+
+-----------------------------------------------------------
+
+3. What details are stored in tnsnames.ora ?
+
+=> 👉 Service Name
+	👉 Protocol
+	👉 Host
+	👉 Port
+
+
+-----------------------------------------------------------
+1. Location of LISTNER.ora & TNS.ora file ?
+=> 👉 $oracle_home/admin/network
+-----------------------------------------------------------
+
+2. Local listener and default Listner ?
+=> 
+-----------------------------------------------------------
+
+3. How to Check shared server or dedicated server configured ?
+
+=> 👉 show parameter share;
+
+	👉	if the 'Shared dervers' value more than 0 then it configured with 'Shared server'
+
+ 	👉 if the value is 0 then it is dedicated server configured.
+-----------------------------------------------------------
+
+4. How to know which database i'm using or sitting on ?
+
+=> 👉 (i). select name from v$database; OR
+       show parameter db_name;
+
+=> 👉 (ii).  OS level --> echo $ORACLE_SID
+-----------------------------------------------------------
+
+5. How do i know the what is my hostname ?
+
+=> 👉 (i) desc v$instance;
+	   select host_name from v$instance;
+   👉 (ii) OS prompt -> uname -a
+-----------------------------------------------------------
+
+6. 
+  	

@@ -1,0 +1,70 @@
+/**************************** DB upgrade inerviw question :: ******************************/
+
+1. Highlevel steps of DB upgrade :
+
+=> PRECHECKS/:
+-------------------
+
+check invalid object
+Recyclbin purge
+backup
+store gather
+install 12c binaries
+Genarate AWR (12c)
+Freshly bounce database (shu immediate / init 6 to restart)
+change required parameter.
+
+=> UPGRADE/:
+------------------
+Install sample config file
+changes in config file
+Use modes - analyze - Fixup - Diploy using autoupgrade.jar utility tool.
+
+=> POSTCHECK/:
+----------------------
+check DB version
+check the time zone
+check the invalid objects
+change compatible parameters
+-------------------------------------- End of upgrade high level steps   ---------------------------------------
+
+2. From What version to what version you have done database upgradation ?
+=> 12cR2 to 19c  OR  12cR1 to 19c
+
+3. What is the DB size you've upgrade ?
+=> 800 GB And 8TB
+
+4. What are the issues you've faced during upgradation ?
+=> FRA, File system, parameter related issues, Archive log issues, like archive log on or not. it has to be on.
+
+5. What are the prerequisite of upgradation ?
+=> i). You have to enough space on your file system 
+   ii). Linux version must be 7.9
+   iii). If ASM running then it has to be 19c version.
+
+*** Suppose our ASM is running on 12c, DB is running 12c and our OS version is 7.5. now client ask to upgrade it to 19c. Now what to do ??
+
+==>  First, OS team upgrade it to 7.9 which is required version.
+	Secondly, We've to upgrade ASM to 19c first before DB. Because, ASM version always >= DB version.
+	if our ASM version is 12c then our DB version has to be 12c or 11g or 10g not more than 12c version. *
+
+
+
+6. Query running / application slowness how to resolved it and as a DBA what is your approach ?
+
+=> i. Check the database status. If DB is up and running or not.
+   ii. Check our Session is reaching beyond threshold or not. means, if our session threshold is set and active session is more than that then transaction will be interrupt.
+   iii. Check listners status
+   iv. Check FRA is fully filled. Because all transactions will go to FRA. 
+
+
+
+7. Name of some ORA error ?
+=> ORA-060 - it cause of Deadlock
+   ORA-0600 - It cause of internal error. (Bugs - patch)
+   ORA-0125 - Listners related
+   ORA-4031 - Cause of share pool size very low.
+
+
+Top 5 wait events name and how they work ?** (Performance Tuning)
+=> 

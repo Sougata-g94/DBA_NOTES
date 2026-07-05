@@ -1,0 +1,396 @@
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ DATAFILE ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+
+How to start env ? syntax ?
+
+=> ✅[oracle@localhost ~]$ . oraenv
+		ORACLE_SID = [oracle] ? prod
+		The Oracle base has been set to /u01/app/oracle
+		[oracle@localhost ~]$ sqlplus / as sysdba
+
+-------------------------------------------------------------------------------------
+1. See datafile location using sql ?
+
+=> 👉 select file_name from dba_data_files;
+--------------------------------------------------------------------------------------
+
+2. See Controlfile location using query ?
+
+=> 👉 desc v$controlfile;
+--------------------------------------------------------------------------------------
+
+3. See Redolog file location using query ?
+
+=> 👉 desc v$logfile;
+--------------------------------------------------------------------------------------
+
+3. See temp.dbf location using query ?
+
+=> 👉 desc v$tempfile;
+--------------------------------------------------------------------------------------
+
+4. See Archive file location using query ?
+
+=> 👉 SHOW PARAMETER log_archive_dest;
+   👉 v$archive_dest;
+   👉 ARCHIVE LOG LIST;
+--------------------------------------------------------------------------------------
+
+4. How to Check DB block size ?
+
+=> 👉 show parameter db_block;
+--------------------------------------------------------------------------------------
+
+2. View of datafiles ?
+
+=> 👉 desc dba_data_files;
+--------------------------------------------------------------------------------------
+
+3. Add datafile ?
+=> 👉 ALTER TABLESPACE 'tablespace_name' ADD DATAFILE '/path/to/new/datafile.dbf' SIZE 10M autoextend on maxsize 100M;
+--------------------------------------------------------------------------------------
+
+4. How to check invalid object ? what is the view ?
+=> 👉 SELECT object_name, object_type, status FROM user_objects WHERE status = 'INVALID';
+--------------------------------------------------------------------------------------
+
+5. How to validate invalid objects ?
+=> 👉 Use Oracle-provided script. 
+	 👉 @?/rdbms/admin/utlrp.sql
+ 
+	📌 What it does:
+		👉 Recompiles all INVALID objects
+--------------------------------------------------------------------------------------
+
+
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ TABLESPACE ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+
+3. View of tablespace ?
+=> 👉 desc dba_tablespaces;
+--------------------------------------------------------------------------------------
+
+5. Create tablespace syntax ?
+=> 👉 create tablespace 'tablspace_name' datafile '/u01/app/oracle/oradata/PROD/scgtbs.dbf' size 10M autoextend on;
+--------------------------------------------------------------------------------------
+
+6. Why autoextend on is nessesery ? 
+=> 👉 AUTOEXTEND ON allows a datafile to grow automatically when it becomes full, 
+		so the database does not suddenly stop working.
+--------------------------------------------------------------------------------------
+
+6. Change tablespace name of a user ?
+=> 👉 alter user 'user_name' default tablespace 'new_tablspace_name';
+--------------------------------------------------------------------------------------
+
+11. Change the default tablespace for a user ?
+=> 👉 alter user 'user_name' identified by oracle default tablespace 'tablspace_name' quota 10M on tablspace_name;
+---------------------------------------------------------------------------------------
+
+4. View of tables ?
+=> 👉 desc dba_tables;
+---------------------------------------------------------------------------------------
+
+10. Check which user has what tablespace ?
+=> 👉 select USERNAME,DEFAULT_TABLESPACE from dba_users where username='NIK';
+--------------------------------------------------------------------------------------
+
+11. dba_tables & user_tables diffrence ?
+=> 👉 dba_tables -- will show all tables in the database
+   👉 user_tables -- will show all tables by current connected user (HR)
+--------------------------------------------------------------------------------------  
+
+12. What is a Synonym ? Types of synoname ?
+
+=> 	👉 A synonym is an alias (alternate name) for a database object such as a table, view,
+			 sequence, or procedure.
+		   It helps users access objects without knowing the owner schema or full name.
+
+	 ✅ Why do we use synonyms :
+
+	 	👉 Hide schema (owner) name
+	 	👉 Simplify SQL statements
+	 	👉 Provide abstraction & security
+
+	 ✅ Types of Synonyms in Oracle : There are 2 main types.
+
+	 	 👉 Private Synonym -- A synonym owned by a specific user and usable only by that user.
+
+	 	 			🔹 SYNTAX - CREATE SYNONYM emp FOR hr.employees;
+
+	 	 👉 Public Synonym -- A synonym owned by PUBLIC and usable by all DB users.		
+
+	 	 			🔹 SYNTAX - CREATE PUBLIC SYNONYM emp FOR hr.employees;		
+
+	 	✅ EXAMPLE : Suppose the DBA creates: 
+
+	 	-- CREATE PUBLIC SYNONYM emp FOR hr.employees;
+	 	-- GRANT SELECT ON hr.employees to SCOTT;
+
+	 	✅ Now user SCOTT can run:
+
+	 	SELECT * FROM emp; instead of SELECT * FROM hr.employees;
+
+
+------------------------------------------------------------------------------
+
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ PROFILES ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+
+
+6. What is PROFILE ?
+
+=> 👉 PROFILE - PROFILE is main use for restricting the resources being used by the users.
+--------------------------------------------------------------------------------------
+
+6. See view of profile ?
+=> 👉 desc dba_profiles;
+--------------------------------------------------------------------------------------
+
+7. Syntax of PROFILE and LIMIT ?
+=> 👉 select PROFILE,RESOURCE_NAME,RESOURCE_TYPE,LIMIT from dba_profiles;
+--------------------------------------------------------------------------------------
+
+8. Create PROFILE syntax ?
+=> 👉 create profile 'limit_profile' LIMIT sessions_per_user 2 failed_login_attempts 2 idle_time 3;
+--------------------------------------------------------------------------------------
+
+9. Assign PROFILE of a user ?
+=> 👉 alter user 'user_name' profile 'limit_profile';
+--------------------------------------------------------------------------------------
+
+10. What is PASSWORD_VERIFY_FUNCTION in Profile ?
+=> it's check the complexcity of password.
+👉 alter profile profile_name limit PASSWORD_VERIFY_FUNCTION ora12c_verify_function;
+👉 SELECT profile,resource_name,limit FROM dba_profiles WHERE resource_name='PASSWORD_VERIFY_FUNCTION';
+--------------------------------------------------------------------------------------
+
+12. update any value of a table syntax ?
+=> 👉 update 'HR.employees' set name='james' where id=2;
+---------------------------------------------------------------------------------------
+
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ ROLE & PRIVILEGES ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+
+1. What is defination of ROLE ? 
+
+=> 👉 Collections of privilages called ROLE. 
+	👉 Instead of granting individual privileges to each user, you can grant a role that contains all the necessary privileges.
+
+---------------------------------------------------------------------------------------
+
+13. ROLE create syntax ?
+=> 👉 create role <role_name>;
+---------------------------------------------------------------------------------------
+
+14. How to give permission (system privilege) to a ROLE ?
+=> 👉 grant create session,create table, create view to <role_name>;
+---------------------------------------------------------------------------------------
+
+15. What is System Privilege and Object Privilege?
+
+=> ✅ System Privileges -- 
+
+		👉 CREATE SESSION
+		👉 CREATE TABLE
+		👉 CREATE VIEW
+		👉 CREATE USER
+		👉 ALTER SYSTEM
+		👉 DROP ANY TABLE
+
+		🔹 Example -- GRANT CREATE TABLE TO scott;
+
+	✅ Object Privileges -- 
+
+		👉 SELECT
+		👉 INSERT
+		👉 UPDATE
+		👉 DELETE
+		👉 EXECUTE
+
+	🔹 Example -- GRANT SELECT, INSERT ON hr.employees TO scott;
+
+
+---------------------------------------------------------------------------------------
+
+14. How to give permission (system Privilege) to a USER ?
+=> 👉 GRANT create table,create session to 'HR1';
+---------------------------------------------------------------------------------------
+
+17. How to revoke permission (System privilege) to a USER ?
+=> 👉 REVOKE CREATE SESSION FROM HR1;
+---------------------------------------------------------------------------------------
+
+15. How to give permission (Object privilege) to a USER ?
+=> 👉 GRANT SELECT, UPDATE, INSERT, DELETE ON HR1.EMP to HR1;
+---------------------------------------------------------------------------------------
+
+16. How to revoke permission (Object privilege) to a USER ?
+=> 👉 REVOKE SELECT, UPDATE, INSERT, DELETE ON HR_EMP FROM HR1;
+---------------------------------------------------------------------------------------
+
+18.i. 'Admin option' and 'Grant option' diffrence ? 
+
+=> ✅ ADMIN OPTION – for System Privileges
+
+		👉 This allows a user to not only use the system privilege, but also grant it to 
+			others.
+		👉 GRANT CREATE USER TO 'HR' WITH ADMIN OPTION;
+
+		📌 HR can create users.
+		📌 HR can also run:  'GRANT CREATE USER TO 'HR1';
+		
+
+	✅ GRANT OPTION – for Object Privileges.
+
+		👉 This allows a user to use an object (like a table) and give access to others too.
+		👉 GRANT SELECT ON hr.employees TO 'HR1' WITH GRANT OPTION;
+
+		📌 HR can read from the hr.employees table.
+		📌 HR can also run:  GRANT SELECT ON hr.employees TO bob;
+
+---------------------------------------------------------------------------------------
+
+
+15. How to give full permission (object privilege) to the ROLE of any two users/schema  ?**
+
+=> 👉 select 'grant select,update,insert,delete on '||owner||'.'||table_name||' to  <role_name>;' from dba_tables where owner in('HR','NIK');
+---------------------------------------------------------------------------------------
+
+16. Assign the 'Role' which has permission/privileges to newly created user ?
+=> 👉 grant 'role_name' to 'user_name';
+---------------------------------------------------------------------------------------
+
+17. Check what type of privilages has on which users and how many users are used these privilages ?
+=> 👉 desc dba_tab_privs;
+---------------------------------------------------------------------------------------
+
+18. How to Check System Privileges of a User ?
+=> 👉 desc dba_sys_privs;
+	👉 SELECT grantee,privilege,admin_option FROM dba_sys_privs WHERE grantee = 'SCOTT';
+
+---------------------------------------------------------------------------------------
+
+18. How to Check Object Privileges of a User ?
+=> 👉 desc dba_tab_privs;
+	👉 SELECT grantee,owner,table_name,privilege,grantable,grantor FROM dba_tab_privs WHERE
+		grantee = 'SCOTT';
+
+---------------------------------------------------------------------------------------
+
+19. Revoke any previlage from ROLE ?
+=> 👉 revoke create table from <role_name>;
+---------------------------------------------------------------------------------------
+18. drop ROLE syntax ?
+=> 👉 drop role <role_name>;
+---------------------------------------------------------------------------------------
+
+20. Check what are the privileges has given to any specific role ?
+=> 👉 desc dba_tab_privs;
+---------------------------------------------------------------------------------------
+
+21. which privileges are assign on which ROLE ?
+=> 👉 desc dba_role_privs;
+---------------------------------------------------------------------------------------
+
+22. Check Grantee and Granted Role view ?
+=> 	👉 desc dba_role_privs
+	select GRANTEE,GRANTED_ROLE from dba_role_privs where GRANTEE in ('NIK','TEST1','ORCL');
+---------------------------------------------------------------------------------------
+
+1. Create any table to <user_name>, means ?
+=> 👉 Create any table to <user_name>; ---> it means that user can create any table wherever want.
+---------------------------------------------------------------------------------------
+
+1. What mean by 'ANY' table ? 
+=> 👉 grant select any table to <user_name>; --> it means that user access any table of the database. If we have 50 users of the database, it can access all of them.
+---------------------------------------------------------------------------------------
+
+1. Update syntax ?
+=> 👉 update <table_name> set name='change_name' where id='your_id';
+---------------------------------------------------------------------------------------
+
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡ Listeners and TNS ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+
+
+1. What is LISTNER and purpose ?
+
+=> 👉 The Oracle Listener is a network process that listens client connection requests 
+		and redirects them to the appropriate Oracle database server process.
+
+	✅ Purpose of Listener -
+
+		👉 Accept incoming client connection requests
+		👉 Identify which database/service the client wants
+		👉 Allow remote connections to the database
+
+	✅ Listener commands (basic) -
+
+		👉 lsnrctl status
+		👉 lsnrctl start
+		👉 lsnrctl stop
+-----------------------------------------------------------
+
+2. listener.ora vs tnsnames.ora diffrence ?
+
+=> 👉 listener.ora is used on the server side to accept connections,
+	👉 tnsnames.ora is used on the client side to find the database.
+
+	✅ listener.ora :
+
+	LISTENER =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = dbserver)(PORT = 1521))
+  )
+
+
+  ✅ tnsnames.ora :
+
+  ORCL =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = dbserver)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVICE_NAME = orclpdb)
+    )
+  )
+
+-----------------------------------------------------------
+
+3. What details are stored in tnsnames.ora ?
+
+=> 👉 Service Name
+	👉 Protocol
+	👉 Host
+	👉 Port
+
+-----------------------------------------------------------
+
+4. What is Listners Services / Purpose ?
+
+=> 👉 Listners Services is use for - Do connectivity into oracle database we're having some services through that  the outer world (End Users) will be able to connect to the database world.
+
+** Listners service is recive the connection request from the client side. **
+---------------------------------------------------------------------------------------
+
+5. What is TNS services ?
+
+=> 👉 It's a clint side and through this end users will connect to the database.
+In TNSfile.ora file has written all the address of databse / listners. 
+---------------------------------------------------------------------------------------
+
+6. Location of Listners.ora file ?
+=> 👉 $ORACLE_HOME/network/admin
+---------------------------------------------------------------------------------------
+
+7. What does tnsping ?
+=> 👉 It is check the entry i'm given if is it avalable in listners or not. (ex: tnsping prod) so it check the 'PROD' database entry avalable in listners or not.
+---------------------------------------------------------------------------------------
+
+8. Diffrence betweeen SYS and SYSTEM ?
+=> 👉 SYS -- using SYS we can UP and Down / shutdown and Startup the Database.
+   👉 SYSTEM -- using SYSTEM we can do everything except shutdown and Startup the Database
+	   and creating Database.
+-------------------------------------------------------------------------
+
+9. 

@@ -1,0 +1,12 @@
+ora-0555 error ?
+how to check db instance time ? database runtime ?
+databse flashback mode or not check? how many types of flashback mode ?
+01555-snapshot error how to fix ?
+redolog file rezie ?
+resize datafile ?
+connection established server side ?
+backup plus archivelog how many space occupy (bckup size 50gb)
+if FRA mot available then where backup will store ?
+FRA size how to increase ?
+i've an dump file and now i've to restore/import that to new server using (impdp).
+

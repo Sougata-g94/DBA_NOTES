@@ -1,0 +1,7 @@
+1. what is purpose of INDEX
+2. what is inside index (rowid, columnid) 
+3. what is synoname ? types of synoname ?
+4. what is private synoname ?
+5. how to connection is established to Database server ?
+6. how to stop expdp job in logical backup ?
+7. what is incomplete recovery OR inconsistence Recovery ?

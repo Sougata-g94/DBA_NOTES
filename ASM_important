@@ -1,0 +1,291 @@
+1. How to check tablespace monitoring utilization command ?
+
+set feedback off
+set pagesize 70;
+set linesize 2000
+set head on
+COLUMN Tablespace format a25 heading 'Tablespace Name'
+COLUMN autoextensible format a11 heading 'AutoExtend'
+COLUMN files_in_tablespace format 999 heading 'Files'
+COLUMN total_tablespace_space format 99999999 heading 'TotalSpace'
+COLUMN total_used_space format 99999999 heading 'UsedSpace'
+COLUMN total_tablespace_free_space format 99999999 heading 'FreeSpace'
+COLUMN total_used_pct format 9999 heading '%Used'
+COLUMN total_free_pct format 9999 heading '%Free'
+COLUMN max_size_of_tablespace format 99999999 heading 'ExtendUpto'
+COLUM total_auto_used_pct format 999.99 heading 'Max%Used'
+COLUMN total_auto_free_pct format 999.99 heading 'Max%Free'
+WITH tbs_auto AS
+(SELECT DISTINCT tablespace_name, autoextensible
+FROM dba_data_files
+WHERE autoextensible = 'YES'),
+files AS
+(SELECT tablespace_name, COUNT (*) tbs_files,
+SUM (BYTES/1024/1024) total_tbs_bytes
+FROM dba_data_files
+GROUP BY tablespace_name),
+fragments AS
+(SELECT tablespace_name, COUNT (*) tbs_fragments,
+SUM (BYTES)/1024/1024 total_tbs_free_bytes,
+MAX (BYTES)/1024/1024 max_free_chunk_bytes
+FROM dba_free_space
+GROUP BY tablespace_name),
+AUTOEXTEND AS
+(SELECT tablespace_name, SUM (size_to_grow) total_growth_tbs
+FROM (SELECT tablespace_name, SUM (maxbytes)/1024/1024 size_to_grow
+FROM dba_data_files
+WHERE autoextensible = 'YES'
+GROUP BY tablespace_name
+UNION
+SELECT tablespace_name, SUM (BYTES)/1024/1024 size_to_grow
+FROM dba_data_files
+WHERE autoextensible = 'NO'
+GROUP BY tablespace_name)
+GROUP BY tablespace_name)
+SELECT c.instance_name,a.tablespace_name Tablespace,
+CASE tbs_auto.autoextensible
+WHEN 'YES'
+THEN 'YES'
+ELSE 'NO'
+END AS autoextensible,
+files.tbs_files files_in_tablespace,
+files.total_tbs_bytes total_tablespace_space,
+(files.total_tbs_bytes - fragments.total_tbs_free_bytes
+) total_used_space,
+fragments.total_tbs_free_bytes total_tablespace_free_space,
+round(( ( (files.total_tbs_bytes - fragments.total_tbs_free_bytes)
+/ files.total_tbs_bytes
+)
+* 100
+)) total_used_pct,
+round(((fragments.total_tbs_free_bytes / files.total_tbs_bytes) * 100
+)) total_free_pct
+FROM dba_tablespaces a,v$instance c , files, fragments, AUTOEXTEND, tbs_auto
+WHERE a.tablespace_name = files.tablespace_name
+AND a.tablespace_name = fragments.tablespace_name
+AND a.tablespace_name = AUTOEXTEND.tablespace_name
+AND a.tablespace_name = tbs_auto.tablespace_name(+)
+order by total_free_pct;
+
+-----------------------------------------------------------------------------------------------------------
+2. Display 90% above tablespace utilizations ?
+  (Track all Tablespaces with free space < 10%) 
+
+
+Select a.tablespace_name,sum(a.tots/1048576) Tot_Size, sum(a.sumb/1024) Tot_Free, sum(a.sumb)*100/sum(a.tots) Pct_Free, ceil((((sum(a.tots) * 15) - (sum(a.sumb)*100))/85 )/1048576) Min_Add
+from (select tablespace_name,0 tots,sum(bytes) sumb
+from dba_free_space a
+group by tablespace_name
+union
+Select tablespace_name,sum(bytes) tots,0 from dba_data_files
+group by tablespace_name) a group by a.tablespace_name
+having sum(a.sumb)*100/sum(a.tots) < 10
+order by pct_free;
+-----------------------------------------------------------------------------------------------------------
+
+3. Check datafiles location and datafile name ?
+
+=> select file_id,file_name,tablespace_name from dba_data_files;
+
+--------------------------------------------------------------------------------------
+
+4. Datafile add command ?
+
+=> alter tablespace system add datafile '+DATA' size 10M;
+alter tablespace SYSAUX add datafile 'DATA' size 10M;
+-------------------------------------------------------------------------------------
+
+5. Datafile resize command ?
+
+=> alter database datafile '+DATA/PROD/DATAFILE/system.267.1174683711' resize 1g;
+-------------------------------------------------------------------------------------
+
+6. To check how many disk group we have with details like - (header status, free space etc..) ?
+
+set pagesize 200
+set lines 200
+set long 1000
+col path for a50
+col name for a10
+col header_Status for a12
+col read_mb for 99999.99
+col write_mb for 99999.99
+
+select name, path, header_status, total_mb, free_mb, trunc(bytes_read/1024/1024) read_mb, trunc(bytes_written/1024/1024) write_mb from v$asm_disk;
+
+----------------------------------------------------------------------------------------------
+
+7. Disk group monitoring command - (Check the Size and free space in ASM Diskgroup) :
+
+col name for a10
+col percentage 999.99
+
+SELECT name, free_mb, total_mb, free_mb/total_mb*100 as percentage FROM v$asm_diskgroup;
+
+----------------------------------------------------------------------------------------------
+
+8. To check the FRA utilization command ? 
+
+SELECT NAME,
+  ROUND(SPACE_LIMIT / 1048576 / 1024 ) SPACE_LIMIT_GB,
+   ROUND(SPACE_USED / 1048576 /1024 ) SPACE_USED_GB,
+  ROUND(SPACE_LIMIT / 1048576 / 1024 ) - ROUND(SPACE_USED / 1048576 /1024 ) SPACE_USABLE_GB,
+  CEIL(((SPACE_USED / 1048576) * 100) / (SPACE_LIMIT / 1048576)) PRC_USED    FROM V$RECOVERY_FILE_DEST;
+
+----------------------------------------------------------------------------------------------
+
+  DELETION OF ARCHIVELOG
+-----------------------
+   delete expired backup;
+   delete archivelog until time 'SYSDATE-3';
+   delete archivelog until time 'SYSDATE-2';
+   delete archivelog until time 'sysdate-1 /24';
+   delete archivelog until time 'SYSDATE-1';
+   list expired archivelog all;
+   crosscheck archivelog all;
+   delete expired archivelog all;
+======================================================================================
+
+check FRA size
+--------------
+SELECT NAME,
+  ROUND(SPACE_LIMIT / 1048576 / 1024 ) SPACE_LIMIT_GB,
+   ROUND(SPACE_USED / 1048576 /1024 ) SPACE_USED_GB,
+  ROUND(SPACE_LIMIT / 1048576 / 1024 ) - ROUND(SPACE_USED / 1048576 /1024 ) SPACE_USABLE_GB,
+  CEIL(((SPACE_USED / 1048576) * 100) / (SPACE_LIMIT / 1048576)) PRC_USED    FROM V$RECOVERY_FILE_DEST;
+
+
+
+/* ================================ Mount and Dismount ASM Disk group ==========================*/
+
+--Mount the diskgroup
+SQL> alter diskgroup DATA mount;
+
+--Unmount the diskgroup
+SQL>alter diskgroup DATA dismount;
+
+-- To mount/Dismount all the diskgroups
+SQL>alter diskgroup ALL mount;
+SQL>alter diskgroup ALL dismount;
+
+
+Monitor the Rebalance operation ::
+========================================
+select GROUP_NUMBER,OPERATION,STATE,POWER, ACTUAL,ACTUAL,EST_MINUTES from gv$asm_operation;
+
+--Change power of rebalance :
+alter diskgroup DATA rebalance power 10;
+
+
+/* ============================================== 25th july :: ======================================= */
+
+col STATUS format a9
+col hrs format 999.99
+select
+SESSION_KEY, INPUT_TYPE, STATUS,
+to_char(START_TIME,'mm/dd/yy hh24:mi') start_time,
+to_char(END_TIME,'mm/dd/yy hh24:mi')   end_time,
+elapsed_seconds/3600                   hrs
+from V$RMAN_BACKUP_JOB_DETAILS
+order by session_key;
+
+
+Find long running operations
+===========================
+select sid,inst_id,opname,totalwork,sofar,start_time,time_remaining
+from gv$session_longops
+where totalwork<>sofar
+/
+========================================
+
+
+[oracle@primary OPatch]$ /u01/app/oracle/product/19/db/OPatch/opatch lsinv |grep desc
+
+===
+[oracle@primary OPatch]$ vi /tmp/patch_list_dbhome.txt
+[oracle@primary OPatch]$ 
+[oracle@primary OPatch]$ cat /tmp/patch_list_dbhome.txt 
+/u01/app/oracle/product/19/db/33859214/33803476/33806152
+/u01/app/oracle/product/19/db/33859214/33803476/33815596
+[oracle@primary OPatch]$ 
+
+
+===
+
+/u01/app/oracle/product/19/db/OPatch/opatch prereq CheckConflictAgainstOHWithDetail -phBaseDir /u01/app/oracle/product/19/db/33859214/33803476/33815596
+
+
+===
+[oracle@primary OPatch]$ $ORACLE_HOME/OPatch/opatch prereq CheckSystemSpace -phBaseFile /tmp/patch_list_dbhome.txt
+Oracle Interim Patch Installer version 12.2.0.1.30
+Copyright (c) 2024, Oracle Corporation.  All rights reserved.
+
+PREREQ session
+
+Oracle Home       : /u01/app/oracle/product/19/db
+Central Inventory : /u01/app/oraInventory
+   from           : /u01/app/oracle/product/19/db/oraInst.loc
+OPatch version    : 12.2.0.1.30
+OUI version       : 12.2.0.7.0
+Log file location : /u01/app/oracle/product/19/db/cfgtoollogs/opatch/opatch2024-07-25_21-26-33PM_1.log
+
+Invoking prereq "checksystemspace"
+
+Prereq "checkSystemSpace" passed.
+
+OPatch succeeded.
+
+====
+/u01/app/oracle/product/19/db/OPatch/opatch apply /u01/app/oracle/product/19/db/33859214/33803476/33806152
+
+
+Patch 33806152 successfully applied.
+Sub-set patch [29517242] has become inactive due to the application of a super-set patch [33806152].
+Please refer to Doc ID 2161861.1 for any possible further required actions.
+Log file location: /u01/app/oracle/product/19/db/cfgtoollogs/opatch/opatch2024-07-25_21-39-43PM_1.log
+
+OPatch succeeded.
+
+==
+eroor:
+
+Verifying environment and performing prerequisite checks...
+Prerequisite check "CheckActiveFilesAndExecutables" failed.
+The details are:
+
+
+Following active files/executables/libs are used by ORACLE_HOME :/u01/app/oracle/product/19/db
+/u01/app/oracle/product/19/db/lib/libclntsh.so.19.1
+/u01/app/oracle/product/19/db/lib/libsqlplus.so
+/u01/app/oracle/product/19/db/lib/libclntsh.so.18.1
+
+
+
+
+/u01/app/oracle/product/19/db/bin/oracle
+UtilSession failed: Prerequisite check "CheckActiveFilesAndExecutables" failed.
+Log file location: /u01/app/oracle/product/19/db/cfgtoollogs/opatch/opatch2024-07-25_21-31-27PM_1.log
+
+OPatch failed with error code 73
+[oracle@primary OPatch]$ 
+
+
+=========
+lsof | grep -e COMMAND -e /u01/app/oracle/product/19/db
+
+==
+
+/u01/app/oracle/product/19/db/OPatch/opatch apply /u01/app/oracle/product/19/db/33859214/33803476/33806152
+
+
+Patch 33806152 successfully applied.
+Sub-set patch [29517242] has become inactive due to the application of a super-set patch [33806152].
+Please refer to Doc ID 2161861.1 for any possible further required actions.
+Log file location: /u01/app/oracle/product/19/db/cfgtoollogs/opatch/opatch2024-07-25_21-39-43PM_1.log
+
+OPatch succeeded.
+
+===
+ select count(*) from all_objects where status ='VALID' group by owner;
+==
+
